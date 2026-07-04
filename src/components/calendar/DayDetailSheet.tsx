@@ -49,11 +49,13 @@ export function DayDetailSheet({
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     setPending(true);
     setError(null);
     try {
-      await createPlannedWorkout(new FormData(e.currentTarget));
-      e.currentTarget.reset();
+      await createPlannedWorkout(formData);
+      form.reset();
       router.refresh();
       onClose();
     } catch {
