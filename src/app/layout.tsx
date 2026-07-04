@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { AppChrome } from "@/components/layout/AppChrome";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -63,8 +64,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-dvh flex flex-col overscroll-none">
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="antialiased">
+        <ThemeProvider>
+          <AppChrome>{children}</AppChrome>
+        </ThemeProvider>
       </body>
     </html>
   );

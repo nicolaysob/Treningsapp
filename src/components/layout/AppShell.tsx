@@ -16,21 +16,29 @@ function getInitials(name: string | null | undefined): string {
     .toUpperCase();
 }
 
-export function AppShell({ children }: { children: ReactNode; userName?: string | null }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
+    document.documentElement.classList.add("app-locked");
+    document.body.classList.add("app-locked");
+
     fetch("/api/auth/session")
       .then((res) => res.json())
       .then((data: { user?: { name?: string | null } }) => {
         setUserName(data.user?.name ?? null);
       })
       .catch(() => {});
+
+    return () => {
+      document.documentElement.classList.remove("app-locked");
+      document.body.classList.remove("app-locked");
+    };
   }, []);
 
   return (
-    <div className="app-bg app-shell flex min-h-dvh flex-col">
-      <header className="glass-header sticky top-0 z-40 px-4 pt-3 sm:px-6">
+    <div className="app-bg app-shell">
+      <header className="app-shell__header glass-header px-4 pt-3 sm:px-6">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <AppLogo size="sm" />
@@ -50,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode; userName?: string 
         </div>
       </header>
 
-      <main className="app-shell__main mx-auto w-full max-w-3xl flex-1 px-4 pt-4 sm:px-6 sm:pt-5">
+      <main className="app-shell__main mx-auto w-full max-w-3xl px-4 pt-4 sm:px-6 sm:pt-5">
         {children}
       </main>
 

@@ -42,6 +42,10 @@
   color-scheme: light;
 }
 
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -237,30 +241,44 @@ body {
   border-color: rgba(61, 214, 140, 0.2);
 }
 
-/* Navigation island */
-:root {
-  --bottom-nav-height: 5.75rem;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+/* App shell — only main scrolls, nav stays put (iOS-safe) */
+html.app-locked,
+body.app-locked {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.app-shell__header {
+  flex-shrink: 0;
+  z-index: 10;
 }
 
 .app-shell__main {
-  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  padding: 0 1rem calc(0.75rem + var(--safe-bottom));
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-  pointer-events: none;
+  flex-shrink: 0;
+  z-index: 20;
+  padding: 0.5rem 1rem calc(0.75rem + var(--safe-bottom));
+  background: linear-gradient(to top, var(--background) 70%, transparent);
 }
 
 .bottom-nav__inner {
-  pointer-events: auto;
   max-width: 32rem;
   margin: 0 auto;
 }
@@ -279,7 +297,6 @@ body {
   touch-action: manipulation;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
 }
 
 .nav-island {
