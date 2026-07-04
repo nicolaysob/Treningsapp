@@ -77,6 +77,7 @@ export type FriendsData = {
 
 export type CoachData = {
   hasData: boolean;
+  hrMaxBpm: number | null;
   setup: {
     needsHrMaxSetup: boolean;
     isActive: boolean;
@@ -105,9 +106,20 @@ export type CoachData = {
     dayPlan: Array<{ label: string; recommendation: string; intensity: string }>;
   } | null;
   zoneDistribution: {
+    weekStart: string;
+    weekEnd: string;
+    totalDurationSec: number;
+    classifiedDurationSec: number;
     easyPercent: number;
     hardPercent: number;
-    totalDurationSec: number;
+    targetEasyPercent: number;
+    targetHardPercent: number;
+    zones: Array<{
+      zone: string;
+      label: string;
+      durationSec: number;
+      percent: number;
+    }>;
   } | null;
 };
 
@@ -178,7 +190,8 @@ export async function login(
   return parseJson(res);
 }
 
-export const fetchHome = (token: string) => authFetch<HomeData>("/api/mobile/home", token);
+export const fetchHome = (token: string, days = 90) =>
+  authFetch<HomeData>(`/api/mobile/home?days=${days}`, token);
 export const fetchCalendar = (token: string, month?: string) =>
   authFetch<CalendarData>(`/api/mobile/calendar${month ? `?month=${month}` : ""}`, token);
 export const fetchCoach = (token: string) => authFetch<CoachData>("/api/mobile/coach", token);

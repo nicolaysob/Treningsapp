@@ -1,12 +1,12 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
 import { HomeScreen } from "../screens/HomeScreen";
 import { CalendarScreen } from "../screens/CalendarScreen";
 import { CoachScreen } from "../screens/CoachScreen";
 import { LeaderboardScreen } from "../screens/LeaderboardScreen";
 import { FriendsScreen } from "../screens/FriendsScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { FloatingTabBar } from "./FloatingTabBar";
 import { colors } from "../theme";
 
 export type AppTabParamList = {
@@ -26,52 +26,25 @@ const navTheme = {
     ...DefaultTheme.colors,
     background: colors.bg,
     card: colors.bg,
-    border: "rgba(255,255,255,0.08)",
+    border: "transparent",
     text: colors.text,
     primary: colors.accent,
   },
-};
-
-const TAB_ICONS: Record<keyof AppTabParamList, keyof typeof Ionicons.glyphMap> = {
-  Hjem: "home-outline",
-  Kalender: "calendar-outline",
-  Coach: "sparkles-outline",
-  Duell: "trophy-outline",
-  Venner: "people-outline",
-  Mer: "settings-outline",
 };
 
 export function AppTabs() {
   return (
     <NavigationContainer theme={navTheme}>
       <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          headerTitleStyle: { fontWeight: "800" },
-          tabBarStyle: {
-            backgroundColor: "rgba(18,18,20,0.96)",
-            borderTopColor: "rgba(255,255,255,0.08)",
-            borderTopWidth: 1,
-            height: 84,
-            paddingTop: 8,
-            paddingBottom: 24,
-          },
-          tabBarActiveTintColor: colors.accent,
-          tabBarInactiveTintColor: colors.textDim,
-          tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={TAB_ICONS[route.name]} size={size} color={color} />
-          ),
-        })}
+        tabBar={(props) => <FloatingTabBar {...props} />}
+        screenOptions={{ headerShown: false }}
       >
-        <Tab.Screen name="Hjem" component={HomeScreen} options={{ headerShown: false }} />
-        <Tab.Screen name="Kalender" component={CalendarScreen} options={{ title: "Kalender" }} />
-        <Tab.Screen name="Coach" component={CoachScreen} options={{ title: "Coach" }} />
-        <Tab.Screen name="Duell" component={LeaderboardScreen} options={{ title: "Duell" }} />
-        <Tab.Screen name="Venner" component={FriendsScreen} options={{ title: "Venner" }} />
-        <Tab.Screen name="Mer" component={SettingsScreen} options={{ title: "Mer" }} />
+        <Tab.Screen name="Hjem" component={HomeScreen} />
+        <Tab.Screen name="Kalender" component={CalendarScreen} />
+        <Tab.Screen name="Coach" component={CoachScreen} />
+        <Tab.Screen name="Duell" component={LeaderboardScreen} />
+        <Tab.Screen name="Venner" component={FriendsScreen} />
+        <Tab.Screen name="Mer" component={SettingsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );

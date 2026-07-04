@@ -1,17 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
+import Constants from "expo-constants";
 import { fetchSettings, triggerSync, type SettingsData } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { clearToken } from "../auth";
-import { ActionButton, RowCard, ScreenHeader, Section } from "../components/ui";
-import { colors, spacing } from "../theme";
+import { PRIVACY_TEXT, TERMS_TEXT } from "../legal";
+import { LegalSheet } from "../components/legal/LegalSheet";
+import {
+  AccountCard,
+  SettingsLinkRow,
+  SettingsSection,
+} from "../components/settings/AccountCard";
+import { API_URL } from "../config";
+import {
+  Button,
+  ErrorText,
+  HeroHeader,
+  LoadingScreen,
+  Screen,
+  SuccessText,
+} from "../components/ui";
+import { colors } from "../theme";
+
+const DIVIDER = () => <View style={styles.divider} />;
 
 export function SettingsScreen() {
   const { token, logout } = useAuth();
@@ -21,6 +32,8 @@ export function SettingsScreen() {
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -41,7 +54,7 @@ export function SettingsScreen() {
     setMessage(null);
     try {
       await triggerSync(token);
-      setMessage("Synk startet. Vent 1–2 min og dra ned for å oppdatere.");
+      setMessage("Synk startet — vent 1–2 min og dra ned for å oppdatere.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Synk feilet");
     } finally {
@@ -54,79 +67,123 @@ export function SettingsScreen() {
     logout();
   }
 
-  if (loading && !data) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
-  }
+  if (loading && !data) return <LoadingScreen />;
+
+  const version = Constants.expoConfig?.version ?? "1.0.0";
+  const trainingLabel = data?.training.isActive
+    ? `Aktiv · ${data.training.method ?? "satt"}`
+    : data?.training.needsHrMaxSetup
+      ? "Trenger makspuls"
+      : "Ikke satt";
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))} tintColor={colors.accent} />
-      }
-    >
-      <ScreenHeader title="Mer" subtitle="Konto og synk" />
-      {error && <Text style={styles.error}>{error}</Text>}
-      {message && <Text style={styles.message}>{message}</Text>}
+    <Screen refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))}>
+      <HeroHeader title="Mer" subtitle="Konto, tilkoblinger og personvern" />
 
-      <Section title="Konto">
-        <RowCard title="Navn" right={data?.profile.name ?? "—"} />
-        <RowCard title="Brukernavn" right={`@${data?.profile.username ?? "?"}`} />
-      </Section>
+      {error && <ErrorText text={error} />}
+      {message && <SuccessText text={message} />}
 
-      <Section title="Strava">
-        <RowCard
-          title="Tilkobling"
-          right={data?.stravaConnected ? "Koblet" : "Ikke koblet"}
-          subtitle={
-            data?.stravaConnected
-              ? "Kobling gjøres på nett. Synk fungerer her."
-              : "Koble Strava på nett først"
-          }
+      <SettingsSection title="Konto" bare>
+        <AccountCard
+          name={data?.profile.name ?? null}
+          username={data?.profile.username ?? null}
+          image={data?.profile.image ?? null}
         />
-        <ActionButton
-          label={syncing ? "Synker…" : "Synk nå"}
-          onPress={() => void handleSync()}
-          disabled={syncing || !data?.stravaConnected}
-        />
-      </Section>
+      </SettingsSection>
 
-      <Section title="Trening">
-        <RowCard
-          title="Terskler"
-          right={data?.training.isActive ? "Aktiv" : "Mangler"}
-          subtitle={
-            data?.training.method
-              ? `Metode: ${data.training.method}`
-              : "Sett FTP/tempo/puls på nett"
-          }
+      <SettingsSection title="Tilkoblinger">
+        <SettingsLinkRow
+          icon="bicycle-outline"
+          title="Strava"
+          subtitle={data?.stravaConnected ? "Tilkoblet — administrer på nett" : "Koble til via nettappen"}
+          right={data?.stravaConnected ? "●" : undefined}
+          onPress={() => void Linking.openURL(`${API_URL}/settings`)}
         />
-        <RowCard
+        <DIVIDER />
+        <View style={styles.syncBlock}>
+          <View style={styles.syncText}>
+            <Text style={styles.syncTitle}>Synkroniser nå</Text>
+            <Text style={styles.syncSub}>Henter siste aktiviteter fra Strava</Text>
+          </View>
+          <Button
+            label={syncing ? "Synker…" : "Synk"}
+            onPress={() => void handleSync()}
+            disabled={syncing || !data?.stravaConnected}
+            loading={syncing}
+          />
+        </View>
+      </SettingsSection>
+
+      <SettingsSection title="Trening">
+        <SettingsLinkRow
+          icon="fitness-outline"
+          title="Terskler og mål"
+          subtitle={trainingLabel}
+          onPress={() => void Linking.openURL(`${API_URL}/settings/training`)}
+        />
+        <DIVIDER />
+        <SettingsLinkRow
+          icon="analytics-outline"
           title="TSS-dekning"
+          subtitle="Andel økter med beregnet belastning"
           right={`${Math.round((data?.training.tssCoverage ?? 0) * 100)}%`}
         />
         {data?.training.weeklyTssGoal ? (
-          <RowCard title="Ukemål TSS" right={String(data.training.weeklyTssGoal)} />
+          <>
+            <DIVIDER />
+            <SettingsLinkRow icon="flag-outline" title="Ukemål" right={`${data.training.weeklyTssGoal} TSS`} />
+          </>
         ) : null}
         {data?.training.raceName ? (
-          <RowCard title="Race" subtitle={data.training.raceName} />
+          <>
+            <DIVIDER />
+            <SettingsLinkRow icon="trophy-outline" title="Race" subtitle={data.training.raceName} />
+          </>
         ) : null}
-      </Section>
+      </SettingsSection>
 
-      <ActionButton label="Logg ut" variant="ghost" onPress={() => void handleLogout()} />
-    </ScrollView>
+      <SettingsSection title="Personvern og vilkår">
+        <SettingsLinkRow icon="document-text-outline" title="Vilkår for bruk" onPress={() => setShowTerms(true)} />
+        <DIVIDER />
+        <SettingsLinkRow icon="lock-closed-outline" title="Personvernerklæring" onPress={() => setShowPrivacy(true)} />
+        <DIVIDER />
+        <View style={styles.legalNote}>
+          <Text style={styles.legalNoteText}>
+            Du godtok vilkår og personvern ved innlogging. Token lagres kryptert på enheten.
+          </Text>
+        </View>
+      </SettingsSection>
+
+      <SettingsSection title="App">
+        <SettingsLinkRow icon="information-circle-outline" title="Versjon" right={version} />
+        <DIVIDER />
+        <SettingsLinkRow
+          icon="globe-outline"
+          title="Åpne nettappen"
+          subtitle={API_URL.replace("https://", "")}
+          onPress={() => void Linking.openURL(API_URL)}
+        />
+      </SettingsSection>
+
+      <Button label="Logg ut" variant="danger" onPress={() => void handleLogout()} />
+
+      <LegalSheet title="Vilkår for bruk" body={TERMS_TEXT} visible={showTerms} onClose={() => setShowTerms(false)} />
+      <LegalSheet title="Personvern" body={PRIVACY_TEXT} visible={showPrivacy} onClose={() => setShowPrivacy(false)} />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.screen, paddingBottom: 32, gap: spacing.gap },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
-  error: { color: "#f87171", fontSize: 14 },
-  message: { color: colors.green, fontSize: 14 },
+  divider: { height: 1, backgroundColor: colors.cardBorder, marginHorizontal: 14 },
+  syncBlock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+  },
+  syncText: { flex: 1 },
+  syncTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  syncSub: { color: colors.textDim, fontSize: 12, marginTop: 2 },
+  legalNote: { padding: 14 },
+  legalNoteText: { color: colors.textDim, fontSize: 12, lineHeight: 18 },
 });

@@ -1,16 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { fetchHome, type HomeData } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { PmcChart } from "../components/PmcChart";
+import { SegmentedControl } from "../components/SegmentedControl";
 import { TsbGauge } from "../components/TsbGauge";
-import { colors, spacing } from "../theme";
+import type { AppTabParamList } from "../navigation/AppTabs";
+import {
+  Card,
+  CardHeader,
+  EmptyState,
+  ErrorText,
+  HeroHeader,
+  LoadingScreen,
+  ProgressBar,
+  RowItem,
+  Screen,
+} from "../components/ui";
+import { colors } from "../theme";
+
+const PMC_OPTIONS = [30, 90, 180, 365] as const;
 
 const SPORT_LABELS: Record<string, string> = {
   RIDE: "Sykkel",
@@ -28,321 +39,153 @@ const SPORT_ICONS: Record<string, string> = {
   OTHER: "⚡",
 };
 
-const COACH_TONE: Record<string, { border: string; bg: string; title: string }> = {
-  fresh: { border: "rgba(61,214,140,0.2)", bg: "rgba(61,214,140,0.08)", title: "#6ee7b7" },
-  balanced: { border: "rgba(255,255,255,0.08)", bg: "rgba(255,255,255,0.03)", title: "#f4f4f5" },
-  building: { border: "rgba(251,191,36,0.2)", bg: "rgba(251,191,36,0.08)", title: "#fcd34d" },
-  risk: { border: "rgba(248,113,113,0.2)", bg: "rgba(248,113,113,0.08)", title: "#fca5a5" },
-};
-
 export function HomeScreen() {
   const { token } = useAuth();
+  const navigation = useNavigation<BottomTabNavigationProp<AppTabParamList>>();
   const [data, setData] = useState<HomeData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [pmcDays, setPmcDays] = useState<(typeof PMC_OPTIONS)[number]>(90);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const home = await fetchHome(token);
-      setData(home);
+      setData(await fetchHome(token, pmcDays));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunne ikke hente data");
     }
-  }, [token]);
+  }, [token, pmcDays]);
 
   useEffect(() => {
     setLoading(true);
     void load().finally(() => setLoading(false));
   }, [load]);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
-
-  if (loading && !data) {
+  if (loading && !data) return <LoadingScreen />;
+  if (!data) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
+      <Screen>
+        {error ? <ErrorText text={error} /> : <EmptyState text="Kunne ikke laste hjem" />}
+      </Screen>
     );
   }
 
-  const firstName = data?.userName?.split(" ")[0] ?? "deg";
-  const weekGoal = data?.weeklyTssGoal;
+  const firstName = data.userName?.split(" ")[0] ?? "deg";
+  const weekGoal = data.weeklyTssGoal;
   const weekProgress =
-    weekGoal && weekGoal > 0 ? Math.min(100, ((data?.weekTss ?? 0) / weekGoal) * 100) : null;
-  const coachStyle = COACH_TONE[data?.coachTone ?? "balanced"] ?? COACH_TONE.balanced;
+    weekGoal && weekGoal > 0 ? Math.min(100, (data.weekTss / weekGoal) * 100) : null;
+
+  const heroSubtitle = data.latestLoad
+    ? `CTL ${data.latestLoad.ctl.toFixed(0)} · ATL ${data.latestLoad.atl.toFixed(0)} · ${Math.round(data.weekTss)} TSS`
+    : "Synk Strava på nett";
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => void handleRefresh()}
-          tintColor={colors.accent}
-        />
-      }
-    >
-      {error && <Text style={styles.error}>{error}</Text>}
+    <Screen refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))}>
+      {error && <ErrorText text={error} />}
 
-      <View style={styles.heroCard}>
-        <View style={styles.heroText}>
-          <Text style={styles.greeting}>{data?.greeting ?? "Hei"}</Text>
-          <Text style={styles.name}>{firstName}</Text>
-          {data?.latestLoad ? (
-            <Text style={styles.heroMeta}>
-              Fitness {data.latestLoad.ctl.toFixed(0)} · Fatigue {data.latestLoad.atl.toFixed(0)}
-            </Text>
-          ) : (
-            <Text style={styles.heroMeta}>Synk Strava på nett</Text>
-          )}
-        </View>
-        <TsbGauge tsb={data?.latestLoad?.tsb ?? null} />
-      </View>
+      <HeroHeader
+        label={data.greeting ?? "Hei"}
+        title={firstName}
+        subtitle={heroSubtitle}
+        right={<TsbGauge tsb={data.latestLoad?.tsb ?? null} />}
+      />
 
-      {data?.latestLoad && (
-        <View style={styles.bentoRow}>
-          <BentoStat label="Fitness" value={data.latestLoad.ctl.toFixed(0)} unit="CTL" color={colors.blue} />
-          <BentoStat label="Fatigue" value={data.latestLoad.atl.toFixed(0)} unit="ATL" color={colors.accent} />
-          <BentoStat label="Uke" value={Math.round(data.weekTss).toString()} unit="TSS" color={colors.green} />
-        </View>
-      )}
-
-      {data?.coachTitle && (
-        <View style={[styles.card, { borderColor: coachStyle.border, backgroundColor: coachStyle.bg }]}>
-          <Text style={styles.cardLabel}>Coach</Text>
-          {data.coachReadiness !== null && (
-            <Text style={[styles.readiness, { color: coachStyle.title }]}>
-              Readiness {data.coachReadiness}%
-            </Text>
-          )}
-          <Text style={[styles.coachTitle, { color: coachStyle.title }]}>{data.coachTitle}</Text>
-          {data.coachSummary && <Text style={styles.coachSummary}>{data.coachSummary}</Text>}
-        </View>
-      )}
-
-      {(weekGoal || data?.raceName) && (
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Mål</Text>
+      {(weekGoal || data.raceName) && (
+        <Card>
+          <CardHeader title="Mål" />
           {weekGoal ? (
             <>
               <View style={styles.goalRow}>
                 <Text style={styles.goalLabel}>Ukentlig TSS</Text>
                 <Text style={styles.goalValue}>
-                  {Math.round(data?.weekTss ?? 0)}
+                  {Math.round(data.weekTss)}
                   <Text style={styles.goalTarget}> / {weekGoal}</Text>
                 </Text>
               </View>
-              {weekProgress !== null && (
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${weekProgress}%` }]} />
-                </View>
-              )}
+              {weekProgress !== null && <ProgressBar percent={weekProgress} />}
             </>
           ) : null}
-          {data?.raceName && data.daysToRace !== null ? (
-            <View style={[styles.raceRow, weekGoal ? styles.raceRowSpaced : null]}>
+          {data.raceName && data.daysToRace !== null ? (
+            <View style={[styles.raceRow, weekGoal ? styles.raceSpaced : null]}>
               <Text style={styles.raceDays}>{data.daysToRace}</Text>
               <View>
-                <Text style={styles.raceCountdown}>
-                  {data.daysToRace === 1 ? "dag igjen" : "dager igjen"}
-                </Text>
+                <Text style={styles.raceLabel}>{data.daysToRace === 1 ? "dag igjen" : "dager igjen"}</Text>
                 <Text style={styles.raceName}>{data.raceName}</Text>
               </View>
             </View>
           ) : null}
-        </View>
+        </Card>
       )}
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Treningsbelastning</Text>
-        {(data?.pmcChart.length ?? 0) > 0 ? (
-          <Text style={styles.pmcHint}>
-            {data?.pmcChart.length} dager med data · graf kommer i neste oppdatering
-          </Text>
+      <Card style={styles.pmcCard}>
+        <CardHeader title="Treningsbelastning" subtitle="Performance Management Chart" />
+        <SegmentedControl
+          options={[...PMC_OPTIONS]}
+          value={pmcDays}
+          onChange={setPmcDays}
+          formatLabel={(d) => `${d}d`}
+        />
+        {!data.pmcChart?.length ? (
+          <EmptyState text="Koble Strava på nett for å se PMC-grafen" />
         ) : (
-          <Text style={styles.empty}>Koble til Strava for å se PMC-grafen</Text>
+          <PmcChart data={data.pmcChart} />
         )}
-      </View>
+      </Card>
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Økter</Text>
-        {data?.todayWorkouts.length ? (
-          <WorkoutSection title="Dagens økter" workouts={data.todayWorkouts} />
+      <Card>
+        <CardHeader
+          title="Økter"
+          action={
+            <Pressable onPress={() => navigation.navigate("Kalender")}>
+              <Text style={styles.link}>Kalender →</Text>
+            </Pressable>
+          }
+        />
+        {data.todayWorkouts?.length ? (
+          data.todayWorkouts.map((w, i) => (
+            <RowItem
+              key={`t-${i}`}
+              icon={SPORT_ICONS[w.sport] ?? "⚡"}
+              title={SPORT_LABELS[w.sport] ?? w.sport}
+              subtitle={w.description}
+              right={`${w.durationMin}m`}
+            />
+          ))
         ) : null}
-        {data?.tomorrowWorkouts.length ? (
-          <WorkoutSection
-            title={`I morgen · ${data.tomorrowLabel}`}
-            workouts={data.tomorrowWorkouts}
-            spaced
-          />
+        {data.tomorrowWorkouts?.length ? (
+          <>
+            <Text style={styles.subLabel}>I morgen · {data.tomorrowLabel}</Text>
+            {data.tomorrowWorkouts.map((w, i) => (
+              <RowItem
+                key={`m-${i}`}
+                icon={SPORT_ICONS[w.sport] ?? "⚡"}
+                title={SPORT_LABELS[w.sport] ?? w.sport}
+                subtitle={w.description}
+                right={`${w.durationMin}m`}
+              />
+            ))}
+          </>
         ) : null}
-        {!data?.todayWorkouts.length && !data?.tomorrowWorkouts.length ? (
-          <Text style={styles.empty}>Ingen økter i dag eller i morgen</Text>
+        {!data.todayWorkouts?.length && !data.tomorrowWorkouts?.length ? (
+          <EmptyState text="Ingen økter i dag eller i morgen" />
         ) : null}
-      </View>
-    </ScrollView>
-  );
-}
-
-function BentoStat({
-  label,
-  value,
-  unit,
-  color,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  color: string;
-}) {
-  return (
-    <View style={styles.bento}>
-      <Text style={styles.bentoLabel}>{label}</Text>
-      <Text style={[styles.bentoValue, { color }]}>{value}</Text>
-      <Text style={styles.bentoUnit}>{unit}</Text>
-    </View>
-  );
-}
-
-function WorkoutSection({
-  title,
-  workouts,
-  spaced,
-}: {
-  title: string;
-  workouts: HomeData["todayWorkouts"];
-  spaced?: boolean;
-}) {
-  return (
-    <View style={spaced ? styles.workoutSectionSpaced : undefined}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {workouts.map((w, i) => (
-        <View key={`${w.sport}-${i}`} style={styles.workoutRow}>
-          <Text style={styles.workoutIcon}>{SPORT_ICONS[w.sport] ?? "⚡"}</Text>
-          <View style={styles.workoutBody}>
-            <Text style={styles.workoutTitle}>{SPORT_LABELS[w.sport] ?? w.sport}</Text>
-            <Text style={styles.workoutMeta}>{w.description}</Text>
-          </View>
-          <Text style={styles.workoutDuration}>{w.durationMin}m</Text>
-        </View>
-      ))}
-    </View>
+      </Card>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.screen, paddingTop: 8, paddingBottom: 32, gap: spacing.gap },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.bg,
-  },
-  heroCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: colors.card,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: 20,
-  },
-  heroText: { flex: 1, minWidth: 0 },
-  greeting: { color: colors.accentSoft, fontSize: 13, fontWeight: "600" },
-  name: { color: colors.text, fontSize: 28, fontWeight: "800", marginTop: 4 },
-  heroMeta: { color: colors.textDim, fontSize: 13, marginTop: 6 },
-  bentoRow: { flexDirection: "row", gap: 10 },
-  bento: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: 14,
-    alignItems: "center",
-  },
-  bentoLabel: { color: colors.textDim, fontSize: 11, fontWeight: "700" },
-  bentoValue: { fontSize: 24, fontWeight: "800", marginTop: 4 },
-  bentoUnit: { color: colors.textDim, fontSize: 11, fontWeight: "700", marginTop: 2 },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: spacing.card,
-  },
-  cardLabel: {
-    color: colors.textDim,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 12,
-  },
-  readiness: { fontSize: 12, fontWeight: "700", marginBottom: 6 },
-  coachTitle: { fontSize: 17, fontWeight: "700" },
-  coachSummary: { color: colors.textMuted, fontSize: 14, lineHeight: 21, marginTop: 6 },
-  goalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  pmcCard: { gap: 12 },
+  goalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
   goalLabel: { color: colors.textDim, fontSize: 14 },
   goalValue: { color: colors.text, fontSize: 16, fontWeight: "800" },
   goalTarget: { color: colors.textDim, fontWeight: "400" },
-  progressTrack: {
-    height: 8,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 999,
-    marginTop: 12,
-    overflow: "hidden",
-  },
-  progressFill: { height: "100%", backgroundColor: colors.accent, borderRadius: 999 },
   raceRow: { flexDirection: "row", alignItems: "baseline", gap: 10 },
-  raceRowSpaced: { marginTop: 16 },
+  raceSpaced: { marginTop: 14 },
   raceDays: { color: colors.accent, fontSize: 36, fontWeight: "800" },
-  raceCountdown: { color: colors.text, fontSize: 14, fontWeight: "600" },
+  raceLabel: { color: colors.text, fontSize: 14, fontWeight: "600" },
   raceName: { color: colors.textDim, fontSize: 12, marginTop: 2 },
-  pmcHint: { color: colors.textMuted, fontSize: 14 },
-  sectionTitle: {
-    color: colors.textDim,
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 10,
-  },
-  workoutSectionSpaced: { marginTop: 16 },
-  workoutRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "rgba(255,255,255,0.02)",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.04)",
-    padding: 12,
-    marginBottom: 8,
-  },
-  workoutIcon: { fontSize: 20 },
-  workoutBody: { flex: 1, minWidth: 0 },
-  workoutTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
-  workoutMeta: { color: colors.textDim, fontSize: 12, marginTop: 2 },
-  workoutDuration: {
-    color: colors.textDim,
-    fontSize: 12,
-    fontWeight: "700",
-    backgroundColor: "rgba(255,255,255,0.06)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    overflow: "hidden",
-  },
-  empty: { color: colors.textDim, fontSize: 14 },
-  error: { color: "#f87171", fontSize: 14, textAlign: "center" },
+  link: { color: colors.accentSoft, fontSize: 12, fontWeight: "700" },
+  subLabel: { color: colors.textDim, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 4 },
 });

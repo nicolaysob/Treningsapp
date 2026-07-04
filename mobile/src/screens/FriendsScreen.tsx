@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import {
   acceptFriendRequest,
   fetchFriends,
@@ -16,22 +8,29 @@ import {
   type FriendsData,
 } from "../api";
 import { useAuth } from "../context/AuthContext";
-import { ActionButton, RowCard, ScreenHeader, Section } from "../components/ui";
-import { colors, spacing } from "../theme";
+import { ChallengeArena } from "../components/friends/ChallengeArena";
+import {
+  EmptyArena,
+  IncomingSpotlight,
+  OutgoingStrip,
+} from "../components/friends/IncomingSpotlight";
+import { RivalTile, SquadHero } from "../components/friends/SquadHero";
+import { ErrorText, LoadingScreen, Screen, SuccessText } from "../components/ui";
+import { colors } from "../theme";
 
 const FRIEND_ERRORS: Record<string, string> = {
   notfound: "Fant ingen bruker med det brukernavnet.",
-  self: "Du kan ikke legge til deg selv.",
-  exists: "Forespørsel finnes allerede, eller dere er venner.",
+  self: "Du kan ikke utfordre deg selv.",
+  exists: "Forespørsel finnes allerede, eller dere er allerede i gjengen.",
 };
 
 export function FriendsScreen() {
   const { token } = useAuth();
   const [data, setData] = useState<FriendsData | null>(null);
-  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   const load = useCallback(async () => {
@@ -48,13 +47,18 @@ export function FriendsScreen() {
     void load().finally(() => setLoading(false));
   }, [load]);
 
-  async function handleSend() {
-    if (!username.trim()) return;
+  useEffect(() => {
+    if (!success) return;
+    const t = setTimeout(() => setSuccess(null), 3500);
+    return () => clearTimeout(t);
+  }, [success]);
+
+  async function handleSend(username: string) {
     setSending(true);
     setError(null);
     try {
-      await sendFriendRequest(token, username.trim());
-      setUsername("");
+      await sendFriendRequest(token, username);
+      setSuccess(`⚡ Utfordring sendt til @${username}`);
       await load();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Feil";
@@ -64,118 +68,69 @@ export function FriendsScreen() {
     }
   }
 
-  async function handleAccept(id: string) {
-    await acceptFriendRequest(token, id);
-    await load();
-  }
+  if (loading && !data) return <LoadingScreen />;
 
-  async function handleRemove(id: string) {
-    await removeFriendship(token, id);
-    await load();
-  }
-
-  if (loading && !data) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
-  }
+  const friends = data?.friends ?? [];
+  const friendUsers = friends.map((f) => f.user);
+  const pendingCount = data?.stats.pendingCount ?? 0;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))} tintColor={colors.accent} />
-      }
-    >
-      <ScreenHeader
-        title="Venner"
-        subtitle={`${data?.stats.friendCount ?? 0} venner · ${data?.stats.pendingCount ?? 0} ventende`}
-      />
+    <Screen refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))}>
+      <SquadHero friends={friendUsers} pendingCount={pendingCount} />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      <ChallengeArena onSend={handleSend} sending={sending} />
 
-      <Section title="Legg til venn">
-        <TextInput
-          style={styles.input}
-          value={username}
-          onChangeText={setUsername}
-          placeholder="Brukernavn"
-          autoCapitalize="none"
-          placeholderTextColor={colors.textDim}
+      {error && <ErrorText text={error} />}
+      {success && <SuccessText text={success} />}
+
+      {!!data?.incoming?.length && (
+        <IncomingSpotlight
+          requests={data.incoming}
+          onAccept={(id) => void acceptFriendRequest(token, id).then(load)}
+          onDecline={(id) => void removeFriendship(token, id).then(load)}
         />
-        <ActionButton
-          label={sending ? "Sender…" : "Send forespørsel"}
-          onPress={() => void handleSend()}
-          disabled={sending || !username.trim()}
-        />
-      </Section>
-
-      {!!data?.incoming.length && (
-        <Section title="Innkommende">
-          {data.incoming.map((r) => (
-            <View key={r.id} style={styles.actionRow}>
-              <RowCard
-                title={r.user.name ?? r.user.username ?? "Ukjent"}
-                subtitle={`@${r.user.username ?? "?"}`}
-              />
-              <View style={styles.btnRow}>
-                <ActionButton label="Godta" onPress={() => void handleAccept(r.id)} />
-                <ActionButton label="Avslå" variant="danger" onPress={() => void handleRemove(r.id)} />
-              </View>
-            </View>
-          ))}
-        </Section>
       )}
 
-      {!!data?.outgoing.length && (
-        <Section title="Sendt">
-          {data.outgoing.map((r) => (
-            <View key={r.id} style={styles.actionRow}>
-              <RowCard title={r.user.name ?? r.user.username ?? "Ukjent"} subtitle="Venter…" />
-              <ActionButton label="Angre" variant="ghost" onPress={() => void handleRemove(r.id)} />
-            </View>
-          ))}
-        </Section>
+      {!!data?.outgoing?.length && (
+        <OutgoingStrip
+          requests={data.outgoing}
+          onCancel={(id) => void removeFriendship(token, id).then(load)}
+        />
       )}
 
-      <Section title="Gjengen">
-        {!data?.friends.length ? (
-          <Text style={styles.empty}>Ingen venner ennå</Text>
+      <View style={styles.roster}>
+        <Text style={styles.rosterTitle}>Rivaler</Text>
+        {!friends.length ? (
+          <EmptyArena />
         ) : (
-          data.friends.map(({ friendshipId, user }) => (
-            <View key={friendshipId} style={styles.actionRow}>
-              <RowCard title={user.name ?? "Ukjent"} subtitle={`@${user.username ?? "?"}`} />
-              <ActionButton
-                label="Fjern"
-                variant="danger"
-                onPress={() => void handleRemove(friendshipId)}
+          <View style={styles.grid}>
+            {friends.map(({ friendshipId, user }, index) => (
+              <RivalTile
+                key={friendshipId}
+                user={user}
+                rank={index + 1}
+                onRemove={() => void removeFriendship(token, friendshipId).then(load)}
               />
-            </View>
-          ))
+            ))}
+          </View>
         )}
-      </Section>
-    </ScrollView>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.screen, paddingBottom: 32, gap: spacing.gap },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
-  input: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
-    padding: 12,
+  roster: { gap: 12 },
+  rosterTitle: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: -0.3,
   },
-  actionRow: { gap: 8 },
-  btnRow: { flexDirection: "row", gap: 8 },
-  empty: { color: colors.textDim, fontSize: 14 },
-  error: { color: "#f87171", fontSize: 14 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 10,
+  },
 });

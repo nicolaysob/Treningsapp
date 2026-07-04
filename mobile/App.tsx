@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { loadToken } from "./src/auth";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { AppTabs } from "./src/navigation/AppTabs";
@@ -17,29 +18,21 @@ export default function App() {
       .finally(() => setBooting(false));
   }, []);
 
-  if (booting) {
-    return (
-      <View style={styles.boot}>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <StatusBar style="light" />
-      </View>
-    );
-  }
-
-  if (!token) {
-    return (
-      <>
-        <LoginScreen onLoggedIn={setToken} />
-        <StatusBar style="light" />
-      </>
-    );
-  }
-
   return (
-    <AuthProvider token={token} logout={() => setToken(null)}>
-      <AppTabs />
+    <SafeAreaProvider>
+      {booting ? (
+        <View style={styles.boot}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      ) : !token ? (
+        <LoginScreen onLoggedIn={setToken} />
+      ) : (
+        <AuthProvider token={token} logout={() => setToken(null)}>
+          <AppTabs />
+        </AuthProvider>
+      )}
       <StatusBar style="light" />
-    </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 

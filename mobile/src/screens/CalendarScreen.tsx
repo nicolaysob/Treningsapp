@@ -1,32 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import {
-  createPlannedWorkout,
-  deletePlannedWorkout,
-  fetchCalendar,
-  type CalendarData,
-} from "../api";
+import { StyleSheet, Text, View } from "react-native";
+import { fetchCalendar, type CalendarData } from "../api";
 import { useAuth } from "../context/AuthContext";
-import { ActionButton, RowCard, ScreenHeader, Section } from "../components/ui";
-import { colors, spacing } from "../theme";
+import { MonthGrid } from "../components/MonthGrid";
+import {
+  Card,
+  ErrorText,
+  HeroHeader,
+  LoadingScreen,
+  MonthNav,
+  Screen,
+} from "../components/ui";
+import { colors } from "../theme";
 
-const SPORT_LABELS: Record<string, string> = {
-  RIDE: "Sykkel",
-  RUN: "Løping",
-  SWIM: "Svømming",
-  STRENGTH: "Styrke",
-  OTHER: "Annet",
-};
-
-const SPORTS = ["RIDE", "RUN", "SWIM", "STRENGTH", "OTHER"] as const;
+const MONTH_NAMES = [
+  "januar", "februar", "mars", "april", "mai", "juni",
+  "juli", "august", "september", "oktober", "november", "desember",
+];
 
 export function CalendarScreen() {
   const { token } = useAuth();
@@ -36,18 +26,10 @@ export function CalendarScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [addDate, setAddDate] = useState("");
-  const [addSport, setAddSport] = useState<(typeof SPORTS)[number]>("RIDE");
-  const [addDesc, setAddDesc] = useState("");
-  const [addMin, setAddMin] = useState("60");
-  const [saving, setSaving] = useState(false);
-
   const load = useCallback(async () => {
     setError(null);
     try {
-      const cal = await fetchCalendar(token, month);
-      setData(cal);
-      setAddDate((prev) => prev || cal.todayKey);
+      setData(await fetchCalendar(token, month));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunne ikke hente kalender");
     }
@@ -58,157 +40,67 @@ export function CalendarScreen() {
     void load().finally(() => setLoading(false));
   }, [load]);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
+  if (loading && !data) return <LoadingScreen />;
 
-  async function handleAdd() {
-    const durationMin = parseInt(addMin, 10);
-    if (!addDate || !addDesc.trim() || !Number.isFinite(durationMin)) return;
-    setSaving(true);
-    try {
-      await createPlannedWorkout(token, {
-        date: addDate,
-        sport: addSport,
-        description: addDesc.trim(),
-        durationMin,
-      });
-      setAddDesc("");
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kunne ikke lagre");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    try {
-      await deletePlannedWorkout(token, id);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Kunne ikke slette");
-    }
-  }
-
-  if (loading && !data) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
-  }
-
-  const activeDays = (data?.days ?? []).filter(
-    (d) => d.isCurrentMonth && (d.activities.length > 0 || d.planned.length > 0),
-  );
+  const monthDate = data?.monthStart ? new Date(data.monthStart) : new Date();
+  const monthLabel = `${MONTH_NAMES[monthDate.getUTCMonth()]} ${monthDate.getUTCFullYear()}`;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor={colors.accent} />
-      }
-    >
-      <ScreenHeader
-        title="Kalender"
-        subtitle="Planlagte og utførte økter"
-        leftAction={
-          data ? { label: "←", onPress: () => setMonth(data.prevMonth) } : undefined
-        }
-        rightAction={
-          data ? { label: "→", onPress: () => setMonth(data.nextMonth) } : undefined
-        }
-      />
+    <Screen refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))}>
+      <HeroHeader title="Kalender" subtitle="Trykk på en dag for å se økter og planlegge" />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+      {data && (
+        <MonthNav
+          label={monthLabel}
+          onPrev={() => setMonth(data.prevMonth)}
+          onNext={() => setMonth(data.nextMonth)}
+        />
+      )}
 
-      <Section title="Legg til planlagt økt">
-        <TextInput style={styles.input} value={addDate} onChangeText={setAddDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.textDim} />
-        <View style={styles.sportRow}>
-          {SPORTS.map((s) => (
-            <ActionButton
-              key={s}
-              label={SPORT_LABELS[s]}
-              variant={addSport === s ? "primary" : "ghost"}
-              onPress={() => setAddSport(s)}
-            />
-          ))}
+      {error && <ErrorText text={error} />}
+
+      <Card style={styles.card}>
+        <View style={styles.legend}>
+          <Legend color={colors.green} label="Utført plan" hollow={false} />
+          <Legend color={colors.accent} label="Planlagt" hollow />
+          <Legend color="#fc4c02" label="Strava" hollow={false} />
         </View>
-        <TextInput
-          style={styles.input}
-          value={addDesc}
-          onChangeText={setAddDesc}
-          placeholder="Beskrivelse"
-          placeholderTextColor={colors.textDim}
-        />
-        <TextInput
-          style={styles.input}
-          value={addMin}
-          onChangeText={setAddMin}
-          placeholder="Minutter"
-          keyboardType="number-pad"
-          placeholderTextColor={colors.textDim}
-        />
-        <ActionButton label={saving ? "Lagrer…" : "Legg til"} onPress={() => void handleAdd()} disabled={saving} />
-      </Section>
-
-      <Section title={data?.monthLabel ?? "Måned"}>
-        {activeDays.length === 0 ? (
-          <Text style={styles.empty}>Ingen økter denne måneden</Text>
-        ) : (
-          activeDays.map((day) => (
-            <View key={day.key} style={styles.dayBlock}>
-              <Text style={styles.dayTitle}>
-                {day.key}
-                {day.key === data?.todayKey ? " · I dag" : ""}
-              </Text>
-              {day.planned.map((p) => (
-                <View key={p.id} style={styles.itemRow}>
-                  <RowCard
-                    title={`📋 ${SPORT_LABELS[p.sport] ?? p.sport}`}
-                    subtitle={p.description}
-                    right={`${p.durationMin}m`}
-                  />
-                  <ActionButton label="Slett" variant="danger" onPress={() => void handleDelete(p.id)} />
-                </View>
-              ))}
-              {day.activities.map((a) => (
-                <RowCard
-                  key={a.id}
-                  title={`✓ ${SPORT_LABELS[a.sport] ?? a.sport}`}
-                  subtitle="Strava"
-                  right={a.tss ? `${Math.round(a.tss)} TSS` : `${Math.round(a.durationSec / 60)}m`}
-                />
-              ))}
-            </View>
-          ))
+        {data && (
+          <MonthGrid days={data.days} todayKey={data.todayKey} onChanged={() => void load()} />
         )}
-      </Section>
-    </ScrollView>
+      </Card>
+    </Screen>
+  );
+}
+
+function Legend({
+  color,
+  label,
+  hollow,
+}: {
+  color: string;
+  label: string;
+  hollow?: boolean;
+}) {
+  return (
+    <View style={styles.legendItem}>
+      <View
+        style={[
+          styles.legendDot,
+          hollow
+            ? { borderWidth: 1.5, borderColor: color, backgroundColor: "transparent" }
+            : { backgroundColor: color },
+        ]}
+      />
+      <Text style={styles.legendText}>{label}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.screen, paddingBottom: 32, gap: spacing.gap },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.bg },
-  input: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 12,
-    padding: 12,
-    color: colors.text,
-    fontSize: 15,
-  },
-  sportRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  dayBlock: { gap: 8, marginBottom: 8 },
-  dayTitle: { color: colors.accentSoft, fontSize: 13, fontWeight: "700" },
-  itemRow: { gap: 6 },
-  empty: { color: colors.textDim, fontSize: 14 },
-  error: { color: "#f87171", fontSize: 14 },
+  card: { gap: 12 },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { color: colors.textDim, fontSize: 11, fontWeight: "600" },
 });

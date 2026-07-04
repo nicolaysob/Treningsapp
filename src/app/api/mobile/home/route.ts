@@ -4,7 +4,8 @@ import { prisma } from "@/lib/db";
 import { startOfIsoWeek, toDateKey, parseCalendarDateKey, formatDateNb } from "@/lib/date";
 import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
 
-const PMC_DAYS = 90;
+const PMC_OPTIONS = [30, 90, 180, 365];
+const DEFAULT_PMC_DAYS = 90;
 
 function utcDayStart(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -55,8 +56,12 @@ export async function GET(request: Request) {
   const todayKey = toDateKey(todayStart);
   const tomorrowKey = toDateKey(tomorrowStart);
 
+  const url = new URL(request.url);
+  const daysParam = Number(url.searchParams.get("days"));
+  const chartDays = PMC_OPTIONS.includes(daysParam) ? daysParam : DEFAULT_PMC_DAYS;
+
   const since = new Date(todayStart);
-  since.setUTCDate(since.getUTCDate() - PMC_DAYS);
+  since.setUTCDate(since.getUTCDate() - chartDays);
 
   const weekStart = startOfIsoWeek(new Date());
   const weekEnd = new Date(weekStart);
