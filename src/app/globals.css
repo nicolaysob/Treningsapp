@@ -790,6 +790,14 @@ body.app-locked {
   gap: 0.5rem;
 }
 
+.zone-chart__max-link {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ff8f4c;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .zone-chart__range {
   font-size: 0.75rem;
   font-weight: 600;
@@ -845,6 +853,59 @@ body.app-locked {
   background: #3f3f46;
 }
 
+.zone-chart__summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.zone-chart__summary-item {
+  border-radius: 0.875rem;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.75rem 0.875rem;
+}
+
+.zone-chart__summary-item--ok {
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+.zone-chart__summary-item--off {
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+.zone-chart__summary-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #71717a;
+}
+
+.zone-chart__summary-value {
+  margin-top: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fafafa;
+}
+
+.zone-chart__summary-item--ok .zone-chart__summary-value {
+  color: #6ee7b7;
+}
+
+.zone-chart__summary-item--off .zone-chart__summary-value {
+  color: #fbbf24;
+}
+
+.zone-chart__summary-goal {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #52525b;
+}
+
 .zone-chart__targets {
   display: flex;
   align-items: center;
@@ -879,15 +940,28 @@ body.app-locked {
   font-size: 0.875rem;
 }
 
-.zone-chart__dot {
-  height: 0.625rem;
-  width: 0.625rem;
-  border-radius: 999px;
+.zone-chart__legend-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.zone-chart__legend-range {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #52525b;
 }
 
 .zone-chart__legend-label {
   font-weight: 600;
   color: #d4d4d8;
+}
+
+.zone-chart__dot {
+  height: 0.625rem;
+  width: 0.625rem;
+  border-radius: 999px;
 }
 
 .zone-chart__legend-value {
@@ -1664,6 +1738,23 @@ body.app-locked {
   border-color: var(--border);
   background: var(--surface);
   color: var(--foreground);
+}
+
+[data-theme="light"] .zone-chart__summary-value {
+  color: var(--foreground);
+}
+
+[data-theme="light"] .zone-chart__summary-item--ok .zone-chart__summary-value {
+  color: #047857;
+}
+
+[data-theme="light"] .zone-chart__summary-item--off .zone-chart__summary-value {
+  color: #b45309;
+}
+
+[data-theme="light"] .zone-chart__legend-range,
+[data-theme="light"] .zone-chart__summary-goal {
+  color: var(--muted);
 }
 
 [data-theme="light"] .zone-chart__range,

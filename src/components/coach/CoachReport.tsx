@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { CoachReport } from "@/lib/training-load/coach-report";
 import type { InsightTone } from "@/lib/training-load/insight";
+import type { WeeklyZoneDistribution } from "@/lib/training-load/intensity-zones";
+import { ZoneDistributionChart } from "@/components/coach/ZoneDistributionChart";
 
 const TONE_STYLES: Record<
   InsightTone,
@@ -52,7 +54,15 @@ const METRIC_STATUS: Record<string, string> = {
 
 const TREND_ARROW = { up: "↑", down: "↓", flat: "→" } as const;
 
-export function CoachReportView({ report }: { report: CoachReport }) {
+export function CoachReportView({
+  report,
+  zoneDistribution,
+  hrMaxBpm,
+}: {
+  report: CoachReport;
+  zoneDistribution?: WeeklyZoneDistribution | null;
+  hrMaxBpm?: number | null;
+}) {
   const style = TONE_STYLES[report.summary.tone];
 
   return (
@@ -94,6 +104,10 @@ export function CoachReportView({ report }: { report: CoachReport }) {
           </div>
         )}
       </div>
+
+      {zoneDistribution && hrMaxBpm && (
+        <ZoneDistributionChart distribution={zoneDistribution} hrMaxBpm={hrMaxBpm} />
+      )}
 
       <section className="coach-section">
         <h2 className="section-label">Nøkkeltall</h2>

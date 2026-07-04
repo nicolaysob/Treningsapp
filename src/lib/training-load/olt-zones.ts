@@ -29,6 +29,16 @@ export function classifyOltZone(hr: number, hrMaxBpm: number): OltZone {
   return "z5";
 }
 
+export function formatOltZoneRange(def: OltZoneDef): string {
+  const min = Math.round(def.minRatio * 100);
+  const max = Math.round(def.maxRatio * 100);
+  return `${min}–${max}% maks`;
+}
+
+export function getOltZoneDef(zone: OltZone): OltZoneDef | undefined {
+  return OLT_ZONES.find((z) => z.zone === zone);
+}
+
 export function emptyOltZoneSeconds(): Record<OltZone, number> {
   return { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0, unknown: 0 };
 }

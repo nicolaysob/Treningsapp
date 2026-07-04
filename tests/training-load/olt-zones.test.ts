@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyOltZone, OLT_ZONES } from "@/lib/training-load/olt-zones";
+import { classifyOltZone, formatOltZoneRange, OLT_ZONES } from "@/lib/training-load/olt-zones";
 
 describe("classifyOltZone", () => {
   const hrMax = 190;
@@ -14,5 +14,12 @@ describe("classifyOltZone", () => {
 
   it("covers five OLT zone definitions", () => {
     expect(OLT_ZONES).toHaveLength(5);
+  });
+});
+
+describe("formatOltZoneRange", () => {
+  it("formats zone range as percent of max HR", () => {
+    expect(formatOltZoneRange(OLT_ZONES[0])).toBe("55–72% maks");
+    expect(formatOltZoneRange(OLT_ZONES[4])).toBe("92–101% maks");
   });
 });

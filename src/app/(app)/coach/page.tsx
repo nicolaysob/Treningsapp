@@ -4,7 +4,6 @@ import { fetchTrainingInsightContext } from "@/lib/training-load/fetch-context";
 import { getCoachReport } from "@/lib/training-load/coach-report";
 import { getThresholdSetup } from "@/lib/training-load/threshold-setup";
 import { CoachReportView } from "@/components/coach/CoachReport";
-import { ZoneDistributionChart } from "@/components/coach/ZoneDistributionChart";
 import { ThresholdQuickSetup } from "@/components/settings/ThresholdQuickSetup";
 import { fetchWeeklyZoneDistribution } from "@/lib/training-load/fetch-week-zones";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -29,11 +28,6 @@ export default async function CoachPage({
         <PageHeader title="Coach" />
         {saved === "hr" && (
           <p className="mb-3 text-center text-sm font-semibold text-emerald-400">Makspuls aktivert</p>
-        )}
-        {zoneDistribution && (
-          <div className="mb-4">
-            <ZoneDistributionChart distribution={zoneDistribution} />
-          </div>
         )}
         {setup.needsHrMaxSetup ? (
           <Card className="flex flex-col gap-4 py-6">
@@ -68,8 +62,11 @@ export default async function CoachPage({
           <ThresholdQuickSetup setup={setup} compact returnTo="/coach" />
         </div>
       )}
-      {zoneDistribution && <ZoneDistributionChart distribution={zoneDistribution} />}
-      <CoachReportView report={report} />
+      <CoachReportView
+        report={report}
+        zoneDistribution={zoneDistribution}
+        hrMaxBpm={setup.hrMaxBpm}
+      />
     </>
   );
 }
