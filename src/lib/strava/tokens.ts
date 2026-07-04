@@ -32,10 +32,10 @@ export async function ensureFreshToken(userId: string): Promise<string> {
 
   const res = await fetch(STRAVA_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: process.env.AUTH_STRAVA_ID,
-      client_secret: process.env.AUTH_STRAVA_SECRET,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.AUTH_STRAVA_ID ?? "",
+      client_secret: process.env.AUTH_STRAVA_SECRET ?? "",
       grant_type: "refresh_token",
       refresh_token: account.refresh_token,
     }),

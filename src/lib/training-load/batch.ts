@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { computeActivityTss } from "./tss";
 import { nextAtl, nextCtl, tsb } from "./pmc";
 
+const ACTIVITY_UPDATE_CHUNK = 25;
+
 function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -40,18 +42,28 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
 
   if (activities.length === 0) return;
 
+  const computed = activities.map((activity) => ({
+    id: activity.id,
+    date: activity.date,
+    ...computeActivityTss(activity, user),
+  }));
+
+  for (let i = 0; i < computed.length; i += ACTIVITY_UPDATE_CHUNK) {
+    const chunk = computed.slice(i, i + ACTIVITY_UPDATE_CHUNK);
+    await Promise.all(
+      chunk.map(({ id, tss, method }) =>
+        prisma.activity.update({
+          where: { id },
+          data: { tss, tssMethod: method },
+        }),
+      ),
+    );
+  }
+
   const dailyTssByKey = new Map<string, number>();
-
-  for (const activity of activities) {
-    const { tss, method } = computeActivityTss(activity, user);
-
-    await prisma.activity.update({
-      where: { id: activity.id },
-      data: { tss, tssMethod: method },
-    });
-
+  for (const { date, tss } of computed) {
     if (tss !== null) {
-      const key = toDateKey(activity.date);
+      const key = toDateKey(date);
       dailyTssByKey.set(key, (dailyTssByKey.get(key) ?? 0) + tss);
     }
   }
@@ -61,6 +73,14 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
 
   let prevCtl = 0;
   let prevAtl = 0;
+  const dailyLoads: Array<{
+    userId: string;
+    date: Date;
+    dailyTss: number;
+    ctl: number;
+    atl: number;
+    tsb: number;
+  }> = [];
 
   const cursor = new Date(firstDay);
   while (cursor.getTime() <= today.getTime()) {
@@ -70,14 +90,22 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
     const atl = nextAtl(prevAtl, dailyTss);
     const tsbValue = tsb(prevCtl, prevAtl);
 
-    await prisma.dailyLoad.upsert({
-      where: { userId_date: { userId, date: new Date(cursor) } },
-      create: { userId, date: new Date(cursor), dailyTss, ctl, atl, tsb: tsbValue },
-      update: { dailyTss, ctl, atl, tsb: tsbValue },
+    dailyLoads.push({
+      userId,
+      date: new Date(cursor),
+      dailyTss,
+      ctl,
+      atl,
+      tsb: tsbValue,
     });
 
     prevCtl = ctl;
     prevAtl = atl;
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
+
+  await prisma.$transaction([
+    prisma.dailyLoad.deleteMany({ where: { userId } }),
+    prisma.dailyLoad.createMany({ data: dailyLoads }),
+  ]);
 }

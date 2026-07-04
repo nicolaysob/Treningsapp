@@ -26,14 +26,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/settings?error=strava", request.nextUrl.origin));
   }
 
+  const redirectUri = new URL("/api/strava/callback", request.nextUrl.origin).toString();
+
   const tokenRes = await fetch("https://www.strava.com/oauth/token", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_id: process.env.AUTH_STRAVA_ID,
-      client_secret: process.env.AUTH_STRAVA_SECRET,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.AUTH_STRAVA_ID ?? "",
+      client_secret: process.env.AUTH_STRAVA_SECRET ?? "",
       code,
       grant_type: "authorization_code",
+      redirect_uri: redirectUri,
     }),
   });
 

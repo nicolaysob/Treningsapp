@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { recomputeDailyLoad } from "@/lib/training-load/batch";
@@ -65,7 +66,9 @@ export default async function TrainingSettingsPage() {
       },
     });
 
-    await recomputeDailyLoad(session.user.id);
+    const userId = session.user.id;
+    after(() => recomputeDailyLoad(userId));
+
     redirect("/settings/training");
   }
 
