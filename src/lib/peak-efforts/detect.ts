@@ -15,51 +15,63 @@ function distanceTargets(sport: Sport): readonly number[] {
   return sport === "RUN" ? RUN_DISTANCES_M : RIDE_DISTANCES_M;
 }
 
-function candidatesFromStreams(sport: Sport, distance: DistanceSample[]): BestTimeCandidate[] {
-  const candidates: BestTimeCandidate[] = [];
-
-  for (const targetM of distanceTargets(sport)) {
-    const best = bestTimeForDistance(distance, targetM);
-    if (best !== null) {
-      candidates.push({ distanceM: targetM, metric: "time", value: best });
-    }
-  }
-
-  return candidates;
+function activityMatchTolerance(targetM: number): number {
+  return targetM <= 10000 ? 0.02 : 0.01;
 }
 
-function candidatesFromActivity(
+function activityMatchesDistance(distanceM: number, targetM: number): boolean {
+  return Math.abs(distanceM - targetM) / targetM <= activityMatchTolerance(targetM);
+}
+
+function candidateFromStreams(
+  sport: Sport,
+  distance: DistanceSample[],
+  targetM: number,
+): BestTimeCandidate | null {
+  const best = bestTimeForDistance(distance, targetM, sport);
+  if (best === null) return null;
+  return { distanceM: targetM, metric: "time", value: best };
+}
+
+function candidateFromActivity(
   sport: Sport,
   distanceM: number | null,
   durationSec: number,
-): BestTimeCandidate[] {
-  if (!distanceM || distanceM <= 0 || durationSec <= 0) return [];
-
-  const candidates: BestTimeCandidate[] = [];
-
-  for (const targetM of distanceTargets(sport)) {
-    const tolerance = targetM <= 10000 ? 0.02 : 0.01;
-    if (Math.abs(distanceM - targetM) / targetM <= tolerance) {
-      candidates.push({ distanceM: targetM, metric: "time", value: durationSec });
-    }
-  }
-
-  return candidates;
+  targetM: number,
+): BestTimeCandidate | null {
+  if (!distanceM || distanceM <= 0 || durationSec <= 0) return null;
+  if (!activityMatchesDistance(distanceM, targetM)) return null;
+  return { distanceM: targetM, metric: "time", value: durationSec };
 }
 
+/**
+ * For near-exact race distances, Strava's activity moving_time is more reliable
+ * than noisy GPS streams. For longer sessions, use the fastest stream segment.
+ */
 export function computeBestTimeCandidates(
   sport: Sport,
   streams: { distance: DistanceSample[] },
   activity?: { distanceM: number | null; durationSec: number },
 ): BestTimeCandidate[] {
-  const fromStreams = candidatesFromStreams(sport, streams.distance);
-  if (fromStreams.length > 0) return fromStreams;
+  const candidates: BestTimeCandidate[] = [];
 
-  if (activity) {
-    return candidatesFromActivity(sport, activity.distanceM, activity.durationSec);
+  for (const targetM of distanceTargets(sport)) {
+    const activityCandidate = activity
+      ? candidateFromActivity(sport, activity.distanceM, activity.durationSec, targetM)
+      : null;
+    const streamCandidate = candidateFromStreams(sport, streams.distance, targetM);
+
+    if (activityCandidate) {
+      candidates.push(activityCandidate);
+      continue;
+    }
+
+    if (streamCandidate) {
+      candidates.push(streamCandidate);
+    }
   }
 
-  return [];
+  return candidates;
 }
 
 export interface DetectedPr {
