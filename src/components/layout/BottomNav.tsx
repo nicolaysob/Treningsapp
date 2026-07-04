@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -70,6 +71,11 @@ function isActive(pathname: string, href: string) {
 export function BottomNav() {
   const pathname = usePathname();
   const [pendingFriends, setPendingFriends] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     fetch("/api/friends/pending-count")
@@ -78,7 +84,7 @@ export function BottomNav() {
       .catch(() => setPendingFriends(0));
   }, [pathname]);
 
-  return (
+  const nav = (
     <nav className="bottom-nav" aria-label="Hovedmeny">
       <div className="bottom-nav__inner">
         <div className="flex items-stretch justify-around px-0.5 py-1">
@@ -110,4 +116,7 @@ export function BottomNav() {
       </div>
     </nav>
   );
+
+  if (!mounted) return null;
+  return createPortal(nav, document.body);
 }

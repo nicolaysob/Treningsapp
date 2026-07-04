@@ -58,13 +58,6 @@ const appShellScript = `
         regs.forEach(function(r) { r.unregister(); });
       });
     }
-    function setAppHeight() {
-      document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-    }
-    setAppHeight();
-    window.addEventListener('orientationchange', function() {
-      setTimeout(setAppHeight, 100);
-    });
     var path = location.pathname;
     if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
     document.documentElement.classList.add('app-locked');
