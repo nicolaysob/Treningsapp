@@ -32,15 +32,20 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
     setPull(PULL_THRESHOLD * 0.7);
 
     try {
-      const res = await fetch("/api/sync/run", { method: "POST" });
+      const res = await fetch("/api/sync/run", { method: "POST", credentials: "same-origin" });
       if (!res.ok) throw new Error("sync failed");
 
+      // Synk kjører i bakgrunnen — vent litt før vi henter oppdaterte data.
+      await new Promise((resolve) => setTimeout(resolve, 4500));
       router.refresh();
       setState("done");
       setTimeout(() => {
         setState("idle");
         setPull(0);
       }, 1200);
+
+      // Ekstra refresh for tregere synk uten å blokkere UI.
+      setTimeout(() => router.refresh(), 8000);
     } catch {
       setState("error");
       setTimeout(() => {
