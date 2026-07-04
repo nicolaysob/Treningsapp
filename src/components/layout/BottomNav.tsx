@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -68,45 +67,9 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
-function measureSafeAreaBottom(): number {
-  const probe = document.createElement("div");
-  probe.style.cssText =
-    "position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);";
-  document.body.appendChild(probe);
-  const measured = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-  document.body.removeChild(probe);
-  return measured;
-}
-
 export function BottomNav() {
   const pathname = usePathname();
-  const safeAreaRef = useRef<HTMLDivElement>(null);
   const [pendingFriends, setPendingFriends] = useState(0);
-  const [mounted, setMounted] = useState(false);
-  const [standalone, setStandalone] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setStandalone(document.documentElement.classList.contains("standalone-app"));
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || !standalone) return;
-
-    const applySafeArea = () => {
-      const measured = measureSafeAreaBottom();
-      const fallback = measured > 0 ? measured : 34;
-      if (safeAreaRef.current) {
-        safeAreaRef.current.style.height = `${fallback}px`;
-        safeAreaRef.current.style.minHeight = `${fallback}px`;
-      }
-    };
-
-    applySafeArea();
-    const onOrientation = () => setTimeout(applySafeArea, 150);
-    window.addEventListener("orientationchange", onOrientation);
-    return () => window.removeEventListener("orientationchange", onOrientation);
-  }, [mounted, standalone]);
 
   useEffect(() => {
     fetch("/api/friends/pending-count")
@@ -115,10 +78,13 @@ export function BottomNav() {
       .catch(() => setPendingFriends(0));
   }, [pathname]);
 
-  const nav = (
-    <nav className="bottom-nav" aria-label="Hovedmeny">
-      <div className="bottom-nav__inner">
-        <div className="flex items-stretch justify-around px-0.5 py-1">
+  return (
+    <nav
+      className="shrink-0 bg-background pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      aria-label="Hovedmeny"
+    >
+      <div className="mx-auto max-w-lg nav-island">
+        <div className="flex items-stretch justify-around px-0.5 py-1.5">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             return (
@@ -145,11 +111,6 @@ export function BottomNav() {
           })}
         </div>
       </div>
-      <div ref={safeAreaRef} className="bottom-nav__safe-area" aria-hidden="true" />
     </nav>
   );
-
-  if (!mounted) return null;
-  if (standalone) return nav;
-  return createPortal(nav, document.body);
 }

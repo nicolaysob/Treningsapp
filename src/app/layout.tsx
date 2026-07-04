@@ -34,7 +34,6 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f2f2f5" },
     { media: "(prefers-color-scheme: dark)", color: "#050506" },
@@ -59,13 +58,6 @@ const appShellScript = `
         regs.forEach(function(r) { r.unregister(); });
       });
     }
-    var isStandalone =
-      window.navigator.standalone ||
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.matchMedia('(display-mode: fullscreen)').matches;
-    if (isStandalone) {
-      document.documentElement.classList.add('standalone-app');
-    }
     var path = location.pathname;
     if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
     document.documentElement.classList.add('app-locked');
@@ -82,14 +74,14 @@ export default function RootLayout({
   return (
     <html
       lang="nb"
-      className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${geistMono.variable} h-[100dvh] antialiased`}
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: appShellScript }} />
       </head>
-      <body className="h-full overflow-hidden bg-background antialiased">
+      <body className="h-[100dvh] overflow-hidden bg-background antialiased">
         <ThemeProvider>
           <AppChrome>{children}</AppChrome>
         </ThemeProvider>
