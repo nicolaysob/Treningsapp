@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { ensureProductionSchema } from "@/lib/db/ensure-schema";
 import { estimateHrMaxFromActivities } from "./estimate-hr-max";
 
 export type ThresholdMethod = "power" | "pace" | "hr" | "mixed";
@@ -19,6 +20,8 @@ export interface ThresholdSetup {
 }
 
 export async function getThresholdSetup(userId: string): Promise<ThresholdSetup> {
+  await ensureProductionSchema();
+
   const [user, activityStats, hrActivities] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },

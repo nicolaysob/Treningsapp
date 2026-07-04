@@ -9,7 +9,10 @@ const INITIAL_DELAY_MS = 10_000;
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  if (process.env.NODE_ENV === "production" && process.env.ENABLE_AUTO_SYNC !== "true") {
+
+  if (process.env.NODE_ENV === "production") {
+    const { ensureProductionSchema } = await import("@/lib/db/ensure-schema");
+    await ensureProductionSchema();
     return;
   }
 

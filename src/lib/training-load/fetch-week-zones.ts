@@ -1,5 +1,6 @@
 import { formatDateNb, startOfIsoWeek, toDateKey } from "@/lib/date";
 import { prisma } from "@/lib/db";
+import { ensureProductionSchema } from "@/lib/db/ensure-schema";
 import {
   buildWeeklyZoneDistribution,
   type WeeklyZoneDistribution,
@@ -9,6 +10,8 @@ export async function fetchWeeklyZoneDistribution(
   userId: string,
   weekOffset = 0,
 ): Promise<WeeklyZoneDistribution | null> {
+  await ensureProductionSchema();
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { hrMaxBpm: true },
