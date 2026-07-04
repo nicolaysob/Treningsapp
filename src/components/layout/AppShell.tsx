@@ -32,35 +32,37 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="app-shell app-bg">
-      <header className="app-shell__header glass-header pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <AppLogo size="sm" />
-            <div className="hidden sm:block">
-              <p className="text-sm font-bold tracking-tight text-zinc-100">Treningsapp</p>
-              <p className="text-[10px] font-medium text-zinc-600">Belastning · Duell · Kalender</p>
-            </div>
-          </Link>
-          {userName && (
-            <Link
-              href="/settings"
-              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/6 text-xs font-bold text-zinc-300 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              {userImage ? (
-                // eslint-disable-next-line @next/next/no-img-element -- session avatar may be data URL
-                <img src={userImage} alt="" className="h-full w-full object-cover" />
-              ) : (
-                getInitials(userName)
-              )}
+    <>
+      <div className="app-shell app-bg">
+        <header className="app-shell__header glass-header pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))]">
+          <div className="mx-auto flex max-w-3xl items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
+              <AppLogo size="sm" />
+              <div className="hidden sm:block">
+                <p className="text-sm font-bold tracking-tight text-zinc-100">Treningsapp</p>
+                <p className="text-[10px] font-medium text-zinc-600">Belastning · Duell · Kalender</p>
+              </div>
             </Link>
-          )}
-        </div>
-      </header>
+            {userName && (
+              <Link
+                href="/settings"
+                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/6 text-xs font-bold text-zinc-300 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                {userImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- session avatar may be data URL
+                  <img src={userImage} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  getInitials(userName)
+                )}
+              </Link>
+            )}
+          </div>
+        </header>
 
-      <PullToRefresh>{children}</PullToRefresh>
+        <PullToRefresh>{children}</PullToRefresh>
+      </div>
 
       <BottomNav />
-    </div>
+    </>
   );
 }
