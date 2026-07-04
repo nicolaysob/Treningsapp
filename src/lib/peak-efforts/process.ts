@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { ensureFreshToken } from "@/lib/strava/tokens";
 import { fetchActivityStreams } from "@/lib/strava/streams";
 import { StravaApiError } from "@/lib/strava/client";
+import { isOutdoorCycling } from "@/lib/strava/sport-type";
 import { computeBestTimeCandidates, detectAndStorePeaks, type DetectedPr } from "./detect";
 
 const MAX_ACTIVITIES_PER_RUN = 30;
@@ -23,6 +24,7 @@ export async function processNewActivityPeaks(userId: string): Promise<ProcessPe
       date: true,
       distanceM: true,
       durationSec: true,
+      raw: true,
     },
   });
 
@@ -33,6 +35,15 @@ export async function processNewActivityPeaks(userId: string): Promise<ProcessPe
 
   for (const activity of candidates) {
     try {
+      if (activity.sport === "RIDE" && !isOutdoorCycling(activity.raw)) {
+        await prisma.activity.update({
+          where: { id: activity.id },
+          data: { streamsFetchedAt: new Date() },
+        });
+        result.processed++;
+        continue;
+      }
+
       let effortCandidates;
       try {
         const streams = await fetchActivityStreams(activity.stravaActivityId, accessToken);

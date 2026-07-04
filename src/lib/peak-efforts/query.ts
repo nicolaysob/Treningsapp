@@ -4,6 +4,7 @@ import {
   pickBestTimesFromActivities,
   type BestTimeRecord,
 } from "./best-times";
+import { isOutdoorCycling } from "@/lib/strava/sport-type";
 import type { Sport } from "@prisma/client";
 
 function mergeBestTimeRecords(
@@ -39,16 +40,31 @@ export async function getBestTimesForUser(
   const [activities, peaks] = await Promise.all([
     prisma.activity.findMany({
       where: { userId, sport, distanceM: { not: null } },
-      select: { durationSec: true, distanceM: true, date: true },
+      select: { durationSec: true, distanceM: true, date: true, raw: true },
     }),
     prisma.peakEffort.findMany({
       where: { userId, sport, metric: "time" },
-      select: { durationSec: true, value: true, achievedAt: true },
+      select: {
+        durationSec: true,
+        value: true,
+        achievedAt: true,
+        activity: { select: { raw: true } },
+      },
     }),
   ]);
 
-  const fromActivities = pickBestTimesFromActivities(sport, activities);
-  const fromPeaks: BestTimeRecord[] = peaks.map((row) => ({
+  const eligibleActivities =
+    sport === "RIDE"
+      ? activities.filter((a) => isOutdoorCycling(a.raw))
+      : activities;
+
+  const eligiblePeaks =
+    sport === "RIDE"
+      ? peaks.filter((p) => !p.activity || isOutdoorCycling(p.activity.raw))
+      : peaks;
+
+  const fromActivities = pickBestTimesFromActivities(sport, eligibleActivities);
+  const fromPeaks: BestTimeRecord[] = eligiblePeaks.map((row) => ({
     distanceM: row.durationSec,
     label: DISTANCE_LABELS[row.durationSec] ?? `${row.durationSec / 1000} km`,
     timeSec: row.value,
