@@ -1,11 +1,30 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromBearer } from "@/lib/auth-mobile";
 import { prisma } from "@/lib/db";
-import { startOfIsoWeek, toDateKey, parseCalendarDateKey } from "@/lib/date";
+import { startOfIsoWeek, toDateKey, parseCalendarDateKey, formatDateNb } from "@/lib/date";
 import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
+
+const PMC_DAYS = 90;
 
 function utcDayStart(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function getOsloWeekday(): number {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Oslo",
+    weekday: "short",
+  }).format(new Date());
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  return map[weekday] ?? 0;
 }
 
 function getWeekdayGreeting(): string {
@@ -18,7 +37,7 @@ function getWeekdayGreeting(): string {
     "God fredag",
     "God lørdag",
   ];
-  return greetings[new Date().getDay()];
+  return greetings[getOsloWeekday()];
 }
 
 export async function GET(request: Request) {
@@ -34,19 +53,29 @@ export async function GET(request: Request) {
   dayAfterTomorrow.setUTCDate(dayAfterTomorrow.getUTCDate() + 1);
 
   const todayKey = toDateKey(todayStart);
+  const tomorrowKey = toDateKey(tomorrowStart);
+
+  const since = new Date(todayStart);
+  since.setUTCDate(since.getUTCDate() - PMC_DAYS);
+
   const weekStart = startOfIsoWeek(new Date());
   const weekEnd = new Date(weekStart);
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
 
-  const [user, latestLoad, weekTssResult, plannedTodayTomorrow] = await Promise.all([
+  const [user, latestLoad, dailyLoad, weekTssResult, plannedTodayTomorrow] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, weeklyTssGoal: true },
+      select: { name: true, weeklyTssGoal: true, raceName: true, raceDate: true },
     }),
     prisma.dailyLoad.findFirst({
       where: { userId },
       orderBy: { date: "desc" },
       select: { ctl: true, atl: true, tsb: true },
+    }),
+    prisma.dailyLoad.findMany({
+      where: { userId, date: { gte: since } },
+      orderBy: { date: "asc" },
+      select: { date: true, ctl: true, atl: true, tsb: true },
     }),
     prisma.dailyLoad.aggregate({
       where: { userId, date: { gte: weekStart, lt: weekEnd } },
@@ -77,6 +106,12 @@ export async function GET(request: Request) {
     : null;
 
   const todayWorkouts = plannedTodayTomorrow.filter((p) => toDateKey(p.date) === todayKey);
+  const tomorrowWorkouts = plannedTodayTomorrow.filter((p) => toDateKey(p.date) === tomorrowKey);
+
+  const now = new Date();
+  const daysToRace = user?.raceDate
+    ? Math.ceil((user.raceDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+    : null;
 
   return NextResponse.json({
     greeting: getWeekdayGreeting(),
@@ -84,12 +119,32 @@ export async function GET(request: Request) {
     latestLoad,
     weekTss,
     weeklyTssGoal: user?.weeklyTssGoal ?? null,
+    raceName: user?.raceName ?? null,
+    daysToRace,
     coachTitle: coachPreview?.headline ?? null,
     coachSummary: coachPreview?.detail ?? null,
+    coachReadiness: coachPreview?.readiness ?? null,
+    coachTone: coachPreview?.tone ?? null,
+    pmcChart: dailyLoad.map((row) => ({
+      date: row.date instanceof Date ? row.date.toISOString() : String(row.date),
+      ctl: row.ctl,
+      atl: row.atl,
+      tsb: row.tsb,
+    })),
     todayWorkouts: todayWorkouts.map((w) => ({
       sport: w.sport,
       description: w.description,
       durationMin: w.durationMin,
     })),
+    tomorrowWorkouts: tomorrowWorkouts.map((w) => ({
+      sport: w.sport,
+      description: w.description,
+      durationMin: w.durationMin,
+    })),
+    tomorrowLabel: formatDateNb(tomorrowStart, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }),
   });
 }

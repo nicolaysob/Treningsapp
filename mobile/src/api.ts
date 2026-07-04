@@ -7,16 +7,36 @@ export type MobileUser = {
   image: string | null;
 };
 
+export type WorkoutItem = {
+  sport: string;
+  description: string;
+  durationMin: number;
+};
+
 export type HomeData = {
   greeting: string;
   userName: string | null;
   latestLoad: { ctl: number; atl: number; tsb: number } | null;
   weekTss: number;
   weeklyTssGoal: number | null;
+  raceName: string | null;
+  daysToRace: number | null;
   coachTitle: string | null;
   coachSummary: string | null;
-  todayWorkouts: Array<{ sport: string; description: string; durationMin: number }>;
+  coachReadiness: number | null;
+  coachTone: "fresh" | "balanced" | "building" | "risk" | null;
+  pmcChart: Array<{ date: string; ctl: number; atl: number; tsb: number }>;
+  todayWorkouts: WorkoutItem[];
+  tomorrowWorkouts: WorkoutItem[];
+  tomorrowLabel: string;
 };
+
+async function authFetch<T>(path: string, token: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return parseJson<T>(res);
+}
 
 async function parseJson<T>(res: Response): Promise<T> {
   const data = await res.json();
@@ -39,8 +59,5 @@ export async function login(
 }
 
 export async function fetchHome(token: string): Promise<HomeData> {
-  const res = await fetch(`${API_URL}/api/mobile/home`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return parseJson(res);
+  return authFetch<HomeData>("/api/mobile/home", token);
 }
