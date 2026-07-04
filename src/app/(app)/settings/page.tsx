@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
   SettingsGroup,
@@ -21,13 +22,17 @@ const STRAVA_ERROR_MESSAGES: Record<string, string> = {
   strava_taken: "Denne Strava-kontoen er allerede koblet til en annen bruker.",
 };
 
+const SYNC_MESSAGES: Record<string, string> = {
+  started: "Synkronisering startet. Aktiviteter oppdateres i bakgrunnen.",
+};
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; sync?: string }>;
 }) {
   const { userId } = await requireUserId();
-  const { error } = await searchParams;
+  const { error, sync } = await searchParams;
 
   const [user, stravaAccount] = await Promise.all([
     prisma.user.findUnique({
@@ -47,11 +52,15 @@ export default async function SettingsPage({
     const session = await auth();
     if (!session?.user?.id) return;
     const userId = session.user.id;
-    await syncUserFully(userId);
     after(async () => {
-      await syncUserPeaks(userId);
+      try {
+        await syncUserFully(userId);
+        await syncUserPeaks(userId);
+      } catch (err) {
+        console.error("Background Strava sync failed", err);
+      }
     });
-    redirect("/settings");
+    redirect("/settings?sync=started");
   }
 
   async function handleDisconnectStrava() {
@@ -74,6 +83,7 @@ export default async function SettingsPage({
       <PageHeader title="Innstillinger" />
 
       {error && STRAVA_ERROR_MESSAGES[error] && <Alert>{STRAVA_ERROR_MESSAGES[error]}</Alert>}
+      {sync && SYNC_MESSAGES[sync] && <Alert>{SYNC_MESSAGES[sync]}</Alert>}
 
       <div className="flex flex-col gap-6">
         <SettingsGroup title="Konto">
@@ -113,9 +123,9 @@ export default async function SettingsPage({
 
                 <SettingsRow title="Synk aktiviteter" description="Automatisk hver time">
                   <form action={handleSync}>
-                    <Button type="submit" size="sm">
+                    <SubmitButton size="sm" pendingLabel="Synker…">
                       Synk nå
-                    </Button>
+                    </SubmitButton>
                   </form>
                 </SettingsRow>
 

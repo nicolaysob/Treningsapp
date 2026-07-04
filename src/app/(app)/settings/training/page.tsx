@@ -1,21 +1,26 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import { recomputeDailyLoad } from "@/lib/training-load/batch";
-import { revalidateUserCache, invalidateUserCache } from "@/lib/cache/user-data";
-import {
-  formatSecondsToPace,
-  parseOptionalInt,
-  parsePaceToSeconds,
-} from "@/lib/settings-fields";
+import { formatSecondsToPace } from "@/lib/settings-fields";
+import { saveTrainingGoals, saveTrainingThresholds } from "@/app/(app)/settings/training/actions";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Alert } from "@/components/ui/Alert";
 
-export default async function TrainingSettingsPage() {
+const SAVED_MESSAGES: Record<string, string> = {
+  goals: "Mål lagret.",
+  thresholds: "Terskler lagret. CTL/ATL/TSB oppdateres i bakgrunnen.",
+};
+
+export default async function TrainingSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string }>;
+}) {
   const { userId } = await requireUserId();
+  const { saved } = await searchParams;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -31,48 +36,6 @@ export default async function TrainingSettingsPage() {
 
   if (!user) redirect("/login");
 
-  async function handleSaveGoals(formData: FormData) {
-    "use server";
-    const session = await auth();
-    if (!session?.user?.id) return;
-
-    const raceDateRaw = formData.get("raceDate")?.toString();
-    const raceName = formData.get("raceName")?.toString().trim();
-
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        weeklyTssGoal: parseOptionalInt(formData.get("weeklyTssGoal")),
-        raceName: raceName || null,
-        raceDate: raceDateRaw ? new Date(raceDateRaw) : null,
-      },
-    });
-
-    revalidateUserCache(session.user.id);
-    invalidateUserCache(session.user.id);
-    redirect("/settings/training");
-  }
-
-  async function handleSaveThresholds(formData: FormData) {
-    "use server";
-    const session = await auth();
-    if (!session?.user?.id) return;
-
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        ftpWatts: parseOptionalInt(formData.get("ftpWatts")),
-        thresholdPaceSecPerKm: parsePaceToSeconds(formData.get("thresholdPaceMinPerKm")),
-        hrThresholdBpm: parseOptionalInt(formData.get("hrThresholdBpm")),
-      },
-    });
-
-    await recomputeDailyLoad(session.user.id);
-    revalidateUserCache(session.user.id);
-    invalidateUserCache(session.user.id);
-    redirect("/settings/training");
-  }
-
   const thresholdPaceDisplay = user.thresholdPaceSecPerKm
     ? formatSecondsToPace(user.thresholdPaceSecPerKm)
     : "";
@@ -85,9 +48,11 @@ export default async function TrainingSettingsPage() {
         backHref="/settings"
       />
 
+      {saved && SAVED_MESSAGES[saved] && <Alert>{SAVED_MESSAGES[saved]}</Alert>}
+
       <div className="flex flex-col gap-5">
         <Card>
-          <form action={handleSaveGoals} className="flex flex-col gap-4">
+          <form action={saveTrainingGoals} className="flex flex-col gap-4">
             <p className="text-sm font-bold text-zinc-200">Mål</p>
             <Field label="Ukentlig TSS-mål">
               <Input
@@ -113,14 +78,12 @@ export default async function TrainingSettingsPage() {
                 defaultValue={user.raceDate ? user.raceDate.toISOString().slice(0, 10) : ""}
               />
             </Field>
-            <Button type="submit" size="sm" className="self-start">
-              Lagre mål
-            </Button>
+            <SubmitButton className="self-start">Lagre mål</SubmitButton>
           </form>
         </Card>
 
         <Card>
-          <form action={handleSaveThresholds} className="flex flex-col gap-4">
+          <form action={saveTrainingThresholds} className="flex flex-col gap-4">
             <div>
               <p className="text-sm font-bold text-zinc-200">Terskler</p>
               <p className="mt-0.5 text-xs text-zinc-500">Brukes til TSS-beregning</p>
@@ -145,9 +108,7 @@ export default async function TrainingSettingsPage() {
                 placeholder="Valgfritt"
               />
             </Field>
-            <Button type="submit" size="sm" className="self-start">
-              Lagre terskler
-            </Button>
+            <SubmitButton className="self-start">Lagre terskler</SubmitButton>
           </form>
         </Card>
       </div>

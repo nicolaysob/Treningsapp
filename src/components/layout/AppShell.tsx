@@ -20,20 +20,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    document.documentElement.classList.add("app-locked");
-    document.body.classList.add("app-locked");
-
     fetch("/api/auth/session")
       .then((res) => res.json())
       .then((data: { user?: { name?: string | null } }) => {
         setUserName(data.user?.name ?? null);
       })
       .catch(() => {});
-
-    return () => {
-      document.documentElement.classList.remove("app-locked");
-      document.body.classList.remove("app-locked");
-    };
   }, []);
 
   return (

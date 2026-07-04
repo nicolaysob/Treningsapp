@@ -4,6 +4,8 @@ import { recomputeDailyLoad } from "@/lib/training-load/batch";
 
 import { revalidateUserCache } from "@/lib/cache/user-data";
 
+export const maxDuration = 60;
+
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id) {
