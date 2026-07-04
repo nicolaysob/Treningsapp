@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+/** Bump when testing iOS layout — visible in bottom nav to confirm fresh deploy. */
+const BUILD_TAG = "v10";
+
 const NAV_ITEMS = [
   {
     href: "/",
@@ -70,8 +73,11 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="bottom-nav" aria-label="Hovedmeny">
-      <div className="bottom-nav__inner nav-island">
+    <nav
+      className="shrink-0 bg-background px-3 pt-1.5 [padding-bottom:max(0.5rem,env(safe-area-inset-bottom))]"
+      aria-label="Hovedmeny"
+    >
+      <div className="mx-auto max-w-lg nav-island">
         <div className="flex items-stretch justify-around px-0.5 py-1.5">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
@@ -92,6 +98,7 @@ export function BottomNav() {
           })}
         </div>
       </div>
+      <p className="pointer-events-none text-center text-[7px] text-zinc-700">{BUILD_TAG}</p>
     </nav>
   );
 }

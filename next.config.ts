@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  register: true,
-  // Caching navigations breaks dynamic auth pages and can freeze tab switches in PWA.
+  // Disabled until iOS layout is stable — stale SW was serving old CSS on phones.
+  register: false,
   cacheOnFrontEndNav: false,
 });
 
