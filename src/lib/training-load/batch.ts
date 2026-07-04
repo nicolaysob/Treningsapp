@@ -12,6 +12,51 @@ function startOfUtcDay(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
+export function buildDailyLoadSeries(
+  dailyTssByKey: Map<string, number>,
+  firstDay: Date,
+  today: Date,
+): Array<{
+  date: Date;
+  dailyTss: number;
+  ctl: number;
+  atl: number;
+  tsb: number;
+}> {
+  let prevCtl = 0;
+  let prevAtl = 0;
+  const dailyLoads: Array<{
+    date: Date;
+    dailyTss: number;
+    ctl: number;
+    atl: number;
+    tsb: number;
+  }> = [];
+
+  const cursor = new Date(firstDay);
+  while (cursor.getTime() <= today.getTime()) {
+    const dailyTss = dailyTssByKey.get(toDateKey(cursor)) ?? 0;
+
+    const ctl = nextCtl(prevCtl, dailyTss);
+    const atl = nextAtl(prevAtl, dailyTss);
+    const tsbValue = tsb(prevCtl, prevAtl);
+
+    dailyLoads.push({
+      date: new Date(cursor),
+      dailyTss,
+      ctl,
+      atl,
+      tsb: tsbValue,
+    });
+
+    prevCtl = ctl;
+    prevAtl = atl;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return dailyLoads;
+}
+
 /**
  * Recomputes TSS for every activity (using the user's current thresholds)
  * and rebuilds the full DailyLoad history from scratch. Always doing a full
@@ -40,25 +85,16 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
     orderBy: { date: "asc" },
   });
 
-  if (activities.length === 0) return;
+  if (activities.length === 0) {
+    await prisma.dailyLoad.deleteMany({ where: { userId } });
+    return;
+  }
 
   const computed = activities.map((activity) => ({
     id: activity.id,
     date: activity.date,
     ...computeActivityTss(activity, user),
   }));
-
-  for (let i = 0; i < computed.length; i += ACTIVITY_UPDATE_CHUNK) {
-    const chunk = computed.slice(i, i + ACTIVITY_UPDATE_CHUNK);
-    await Promise.all(
-      chunk.map(({ id, tss, method }) =>
-        prisma.activity.update({
-          where: { id },
-          data: { tss, tssMethod: method },
-        }),
-      ),
-    );
-  }
 
   const dailyTssByKey = new Map<string, number>();
   for (const { date, tss } of computed) {
@@ -70,42 +106,30 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
 
   const firstDay = startOfUtcDay(activities[0].date);
   const today = startOfUtcDay(new Date());
+  const dailyLoads = buildDailyLoadSeries(dailyTssByKey, firstDay, today).map((row) => ({
+    userId,
+    ...row,
+  }));
 
-  let prevCtl = 0;
-  let prevAtl = 0;
-  const dailyLoads: Array<{
-    userId: string;
-    date: Date;
-    dailyTss: number;
-    ctl: number;
-    atl: number;
-    tsb: number;
-  }> = [];
+  await prisma.$transaction(
+    async (tx) => {
+      for (let i = 0; i < computed.length; i += ACTIVITY_UPDATE_CHUNK) {
+        const chunk = computed.slice(i, i + ACTIVITY_UPDATE_CHUNK);
+        await Promise.all(
+          chunk.map(({ id, tss, method }) =>
+            tx.activity.update({
+              where: { id },
+              data: { tss, tssMethod: method },
+            }),
+          ),
+        );
+      }
 
-  const cursor = new Date(firstDay);
-  while (cursor.getTime() <= today.getTime()) {
-    const dailyTss = dailyTssByKey.get(toDateKey(cursor)) ?? 0;
-
-    const ctl = nextCtl(prevCtl, dailyTss);
-    const atl = nextAtl(prevAtl, dailyTss);
-    const tsbValue = tsb(prevCtl, prevAtl);
-
-    dailyLoads.push({
-      userId,
-      date: new Date(cursor),
-      dailyTss,
-      ctl,
-      atl,
-      tsb: tsbValue,
-    });
-
-    prevCtl = ctl;
-    prevAtl = atl;
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-
-  await prisma.$transaction([
-    prisma.dailyLoad.deleteMany({ where: { userId } }),
-    prisma.dailyLoad.createMany({ data: dailyLoads }),
-  ]);
+      await tx.dailyLoad.deleteMany({ where: { userId } });
+      if (dailyLoads.length > 0) {
+        await tx.dailyLoad.createMany({ data: dailyLoads });
+      }
+    },
+    { timeout: 60_000 },
+  );
 }
