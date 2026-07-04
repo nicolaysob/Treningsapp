@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -71,13 +70,6 @@ function isActive(pathname: string, href: string) {
 export function BottomNav() {
   const pathname = usePathname();
   const [pendingFriends, setPendingFriends] = useState(0);
-  const [mounted, setMounted] = useState(false);
-  const [standalone, setStandalone] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setStandalone(document.documentElement.classList.contains("standalone-app"));
-  }, []);
 
   useEffect(() => {
     fetch("/api/friends/pending-count")
@@ -86,29 +78,9 @@ export function BottomNav() {
       .catch(() => setPendingFriends(0));
   }, [pathname]);
 
-  const nav = (
+  return (
     <nav
-      className={
-        standalone
-          ? "bottom-nav-pwa"
-          : "bottom-nav-root shrink-0 bg-background pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
-      }
-      style={
-        standalone
-          ? {
-              position: "fixed",
-              right: 0,
-              bottom: 0,
-              left: 0,
-              zIndex: 1000,
-              background: "var(--background)",
-              paddingTop: "0.375rem",
-              paddingRight: "max(0.75rem, env(safe-area-inset-right, 0px))",
-              paddingLeft: "max(0.75rem, env(safe-area-inset-left, 0px))",
-              paddingBottom: "var(--pwa-safe-bottom, 34px)",
-            }
-          : undefined
-      }
+      className="bottom-nav-root shrink-0 bg-background pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
       aria-label="Hovedmeny"
     >
       <div className="mx-auto max-w-lg nav-island">
@@ -141,8 +113,4 @@ export function BottomNav() {
       </div>
     </nav>
   );
-
-  if (!mounted) return null;
-  if (standalone) return createPortal(nav, document.body);
-  return nav;
 }
