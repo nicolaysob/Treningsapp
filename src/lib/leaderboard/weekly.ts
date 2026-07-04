@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 export interface WeeklyLeaderboardRow {
   userId: string;
   userName: string | null;
+  userImage: string | null;
   totalTss: number;
   totalDurationSec: number;
   longestDurationSec: number;
@@ -25,14 +26,16 @@ export async function getWeeklyLeaderboard(
 
   const users = await prisma.user.findMany({
     where: { id: { in: grouped.map((g) => g.userId) } },
-    select: { id: true, name: true },
+    select: { id: true, name: true, image: true },
   });
   const nameById = new Map(users.map((u) => [u.id, u.name]));
+  const imageById = new Map(users.map((u) => [u.id, u.image]));
 
   return grouped
     .map((g) => ({
       userId: g.userId,
       userName: nameById.get(g.userId) ?? "Ukjent",
+      userImage: imageById.get(g.userId) ?? null,
       totalTss: g._sum.tss ?? 0,
       totalDurationSec: g._sum.durationSec ?? 0,
       longestDurationSec: g._max.durationSec ?? 0,

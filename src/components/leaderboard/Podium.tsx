@@ -1,4 +1,5 @@
 import type { WeeklyLeaderboardRow } from "@/lib/leaderboard/weekly";
+import { UserAvatar } from "@/components/friends/UserAvatar";
 
 const PODIUM_ORDER = [1, 0, 2] as const;
 const PODIUM_HEIGHTS = ["h-20", "h-28", "h-14"] as const;
@@ -46,15 +47,13 @@ export function Podium({
           <div key={row.userId} className="flex w-24 flex-col items-center gap-2">
             <div className="flex flex-col items-center gap-1">
               <span className="text-xl leading-none">{MEDALS[rankIndex]}</span>
-              <div
-                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${
-                  isMe
-                    ? "bg-orange-500/20 text-orange-300 ring-2 ring-orange-500/40"
-                    : "bg-white/8 text-zinc-300"
-                }`}
-              >
-                {row.userName?.[0]?.toUpperCase() ?? "?"}
-              </div>
+              <UserAvatar
+                name={row.userName}
+                username={null}
+                image={row.userImage}
+                size="sm"
+                highlight={isMe}
+              />
               <p
                 className={`max-w-full truncate text-center text-xs font-semibold ${
                   isMe ? "text-orange-300" : "text-zinc-300"

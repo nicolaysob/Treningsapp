@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { WeeklyLeaderboardRow } from "@/lib/leaderboard/weekly";
+import { UserAvatar } from "@/components/friends/UserAvatar";
 import { Podium } from "./Podium";
 
 type SortKey = "totalTss" | "totalDurationSec" | "longestDurationSec" | "totalElevationM";
@@ -77,15 +78,13 @@ export function LeaderboardTable({
               <span className="w-5 shrink-0 text-center font-mono text-sm font-bold text-zinc-600">
                 {i + 1}
               </span>
-              <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                  isMe
-                    ? "bg-[#ff6b2b]/20 text-[#ff8f4c] ring-2 ring-[#ff6b2b]/30"
-                    : "bg-white/6 text-zinc-400"
-                }`}
-              >
-                {row.userName?.[0]?.toUpperCase() ?? "?"}
-              </div>
+              <UserAvatar
+                name={row.userName}
+                username={null}
+                image={row.userImage}
+                size="sm"
+                highlight={isMe}
+              />
               <div className="min-w-0 flex-1">
                 <p className={`truncate font-semibold ${isMe ? "text-[#ff8f4c]" : "text-zinc-200"}`}>
                   {row.userName ?? "Ukjent"}
