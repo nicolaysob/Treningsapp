@@ -58,6 +58,28 @@ const appShellScript = `
         regs.forEach(function(r) { r.unregister(); });
       });
     }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        names.forEach(function(name) { caches.delete(name); });
+      });
+    }
+    var isStandalone =
+      window.navigator.standalone ||
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches;
+    if (isStandalone) {
+      document.documentElement.classList.add('standalone-app');
+      var probe = document.createElement('div');
+      probe.style.cssText =
+        'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);';
+      document.documentElement.appendChild(probe);
+      var measured = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+      document.documentElement.removeChild(probe);
+      document.documentElement.style.setProperty(
+        '--pwa-safe-bottom',
+        (measured > 0 ? measured : 34) + 'px'
+      );
+    }
     var path = location.pathname;
     if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
     document.documentElement.classList.add('app-locked');

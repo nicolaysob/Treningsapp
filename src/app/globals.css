@@ -250,7 +250,7 @@ body {
   border-color: rgba(61, 214, 140, 0.2);
 }
 
-/* App shell — height chain handled via Tailwind h-dvh on html/body/shell */
+/* App shell — Safari uses 100dvh; iOS home-screen PWA pins shell to physical screen */
 html.app-locked,
 body.app-locked {
   height: 100vh;
@@ -259,6 +259,40 @@ body.app-locked {
   min-height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
+}
+
+/* 100dvh in standalone PWA stops above the home indicator (~34px gap). */
+html.standalone-app.app-locked,
+html.standalone-app.app-locked body.app-locked {
+  height: auto;
+  min-height: 0;
+}
+
+html.standalone-app .app-shell-root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+html.standalone-app .bottom-nav-root {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+html.standalone-app .bottom-nav__home-indicator {
+  flex-shrink: 0;
+  height: var(--pwa-safe-bottom, env(safe-area-inset-bottom, 34px));
+  min-height: var(--pwa-safe-bottom, env(safe-area-inset-bottom, 34px));
+  background: var(--background);
+}
+
+.bottom-nav__home-indicator {
+  display: none;
+  height: 0;
 }
 
 /* Pull-to-refresh */

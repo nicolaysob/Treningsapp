@@ -80,7 +80,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="shrink-0 bg-background pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      className="bottom-nav-root shrink-0 bg-background pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
       aria-label="Hovedmeny"
     >
       <div className="mx-auto max-w-lg nav-island">
@@ -111,6 +111,7 @@ export function BottomNav() {
           })}
         </div>
       </div>
+      <div className="bottom-nav__home-indicator" aria-hidden="true" />
     </nav>
   );
 }
