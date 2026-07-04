@@ -67,8 +67,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
-  min-height: 100dvh;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.standalone-app body {
+  min-height: 0;
 }
 
 [data-theme="light"] body {
@@ -120,7 +123,7 @@ body {
     var(--background);
 }
 
-.app-bg > * {
+.app-bg > *:not(.bottom-nav) {
   position: relative;
   z-index: 1;
 }
@@ -251,7 +254,7 @@ body {
   border-color: rgba(61, 214, 140, 0.2);
 }
 
-/* App shell — Safari uses fixed nav; standalone PWA uses flex column */
+/* App shell — Safari: fixed nav. Standalone PWA: flex + inset-locked viewport */
 html {
   height: 100%;
   height: -webkit-fill-available;
@@ -260,22 +263,29 @@ html {
 html.app-locked,
 body.app-locked {
   width: 100%;
-  height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-html.app-locked:not(.standalone-app),
-html.app-locked:not(.standalone-app) body.app-locked {
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
+html.standalone-app.app-locked {
+  position: fixed;
+  inset: 0;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
 }
 
-html.standalone-app.app-locked,
 html.standalone-app.app-locked body.app-locked {
-  height: var(--standalone-height, 100%);
-  max-height: var(--standalone-height, 100%);
+  height: 100%;
   min-height: 0;
+  max-height: none;
+}
+
+html.app-locked:not(.standalone-app),
+html.app-locked:not(.standalone-app) body.app-locked {
+  height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
 }
 
 .app-shell {
@@ -289,12 +299,6 @@ html.standalone-app.app-locked body.app-locked {
 html.app-locked:not(.standalone-app) .app-shell {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
-}
-
-html.standalone-app .app-shell {
-  height: var(--standalone-height, 100%);
-  max-height: var(--standalone-height, 100%);
-  min-height: 0;
 }
 
 .app-shell__header {
@@ -325,8 +329,10 @@ html:not(.standalone-app) .ptr-scroll {
   padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
 }
 
-html.standalone-app .bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+.bottom-nav__safe-area {
+  height: env(safe-area-inset-bottom, 0px);
+  min-height: env(safe-area-inset-bottom, 0px);
+  background: var(--background);
 }
 
 html:not(.standalone-app) .bottom-nav {
@@ -335,7 +341,10 @@ html:not(.standalone-app) .bottom-nav {
   bottom: 0;
   left: 0;
   z-index: 1000;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html:not(.standalone-app) .bottom-nav__safe-area {
+  height: env(safe-area-inset-bottom, 0px);
 }
 
 .bottom-nav__inner {

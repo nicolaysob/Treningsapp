@@ -34,6 +34,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f2f2f5" },
     { media: "(prefers-color-scheme: dark)", color: "#050506" },
@@ -58,18 +59,12 @@ const appShellScript = `
         regs.forEach(function(r) { r.unregister(); });
       });
     }
-    var isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-    function setStandaloneHeight() {
-      if (!isStandalone) return;
-      document.documentElement.style.setProperty('--standalone-height', window.innerHeight + 'px');
-    }
+    var isStandalone =
+      window.navigator.standalone ||
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches;
     if (isStandalone) {
       document.documentElement.classList.add('standalone-app');
-      setStandaloneHeight();
-      window.addEventListener('resize', setStandaloneHeight);
-      window.addEventListener('orientationchange', function() {
-        setTimeout(setStandaloneHeight, 100);
-      });
     }
     var path = location.pathname;
     if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
