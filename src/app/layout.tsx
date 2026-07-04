@@ -58,6 +58,19 @@ const appShellScript = `
         regs.forEach(function(r) { r.unregister(); });
       });
     }
+    var isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    function setStandaloneHeight() {
+      if (!isStandalone) return;
+      document.documentElement.style.setProperty('--standalone-height', window.innerHeight + 'px');
+    }
+    if (isStandalone) {
+      document.documentElement.classList.add('standalone-app');
+      setStandaloneHeight();
+      window.addEventListener('resize', setStandaloneHeight);
+      window.addEventListener('orientationchange', function() {
+        setTimeout(setStandaloneHeight, 100);
+      });
+    }
     var path = location.pathname;
     if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
     document.documentElement.classList.add('app-locked');
