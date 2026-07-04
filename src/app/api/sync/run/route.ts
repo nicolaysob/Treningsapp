@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { after } from "next/server";
 import { auth } from "@/lib/auth";
-import { syncUserActivitiesQuick, importBestTimesInBackground } from "@/lib/sync-user";
+import { syncUserFully } from "@/lib/sync-user";
 
 export async function POST() {
   const session = await auth();
@@ -10,17 +9,7 @@ export async function POST() {
   }
 
   try {
-    const userId = session.user.id;
-    await syncUserActivitiesQuick(userId);
-
-    after(async () => {
-      try {
-        await importBestTimesInBackground(userId);
-      } catch (err) {
-        console.error("Background best-times import failed", err);
-      }
-    });
-
+    await syncUserFully(session.user.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Sync failed", err);

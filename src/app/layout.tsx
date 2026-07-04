@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Treningsapp",
-  description: "Treningsbelastning, PMC, beste tider, leaderboard og kalender for vennegjengen.",
+  description: "Treningsbelastning, PMC, leaderboard og kalender for vennegjengen.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

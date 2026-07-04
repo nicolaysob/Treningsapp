@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { auth, signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import { syncUserActivitiesQuick, importBestTimesInBackground } from "@/lib/sync-user";
+import { syncUserFully } from "@/lib/sync-user";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
@@ -23,7 +23,7 @@ const STRAVA_ERROR_MESSAGES: Record<string, string> = {
 };
 
 const SYNC_MESSAGES: Record<string, string> = {
-  started: "Aktiviteter synket. Beste tider oppdateres i bakgrunnen.",
+  started: "Synkronisering startet. Aktiviteter oppdateres i bakgrunnen.",
 };
 
 export default async function SettingsPage({
@@ -53,13 +53,11 @@ export default async function SettingsPage({
     if (!session?.user?.id) return;
     const userId = session.user.id;
 
-    await syncUserActivitiesQuick(userId);
-
     after(async () => {
       try {
-        await importBestTimesInBackground(userId);
+        await syncUserFully(userId);
       } catch (err) {
-        console.error("Background best-times import failed", err);
+        console.error("Background Strava sync failed", err);
       }
     });
 
