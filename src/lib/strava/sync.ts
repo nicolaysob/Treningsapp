@@ -43,16 +43,21 @@ export interface SyncResult {
  * compute TSS or fetch streams here; those are separate, independently
  * retryable steps.
  */
-export async function syncUserActivities(userId: string): Promise<SyncResult> {
+export async function syncUserActivities(
+  userId: string,
+  options?: { full?: boolean },
+): Promise<SyncResult> {
   const accessToken = await ensureFreshToken(userId);
 
-  const latest = await prisma.activity.findFirst({
-    where: { userId },
-    orderBy: { date: "desc" },
-    select: { date: true },
-  });
+  const latest = options?.full
+    ? null
+    : await prisma.activity.findFirst({
+        where: { userId },
+        orderBy: { date: "desc" },
+        select: { date: true },
+      });
 
-  // Small overlap buffer to catch clock-skew edge cases on incremental syncs.
+  // Full sync re-fetches all Strava history; incremental sync uses a 1-day overlap.
   const afterEpoch = latest
     ? Math.floor(latest.date.getTime() / 1000) - 60 * 60 * 24
     : 0;

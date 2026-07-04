@@ -38,7 +38,7 @@ export default async function PeakPage({
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <p className="text-zinc-500">Ingen tider ennå</p>
               <p className="max-w-sm text-sm text-zinc-600">
-                Beste tider hentes fra synkede Strava-økter med matchende distanse.
+                Beste tider hentes fra Strava-økter — trykk Synk nå for å oppdatere alt.
               </p>
             </div>
           </Card>

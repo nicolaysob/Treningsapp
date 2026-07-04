@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { auth, signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import { syncUserFully, syncUserPeaks } from "@/lib/sync-user";
+import { syncUserFullyWithBestTimes } from "@/lib/sync-user";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
@@ -54,8 +54,7 @@ export default async function SettingsPage({
     const userId = session.user.id;
     after(async () => {
       try {
-        await syncUserFully(userId);
-        await syncUserPeaks(userId);
+        await syncUserFullyWithBestTimes(userId);
       } catch (err) {
         console.error("Background Strava sync failed", err);
       }

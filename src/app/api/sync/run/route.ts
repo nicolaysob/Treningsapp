@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { after } from "next/server";
 import { auth } from "@/lib/auth";
-import { syncUserFully, syncUserPeaks } from "@/lib/sync-user";
+import { syncUserFullyWithBestTimes } from "@/lib/sync-user";
 
 export async function POST() {
   const session = await auth();
@@ -11,10 +10,7 @@ export async function POST() {
 
   try {
     const userId = session.user.id;
-    await syncUserFully(userId);
-    after(async () => {
-      await syncUserPeaks(userId);
-    });
+    await syncUserFullyWithBestTimes(userId);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Sync failed", err);
