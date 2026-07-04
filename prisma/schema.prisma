@@ -50,6 +50,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId, provider])
 }
 
 model Session {
@@ -106,6 +107,7 @@ model Activity {
 
   @@index([userId, date])
   @@index([userId, sport, date])
+  @@index([userId, streamsFetchedAt])
 }
 
 model DailyLoad {

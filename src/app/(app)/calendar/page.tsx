@@ -49,14 +49,30 @@ export default async function CalendarPage({
     }),
   ]);
 
+  const activitiesByDay = new Map<string, typeof activities>();
+  for (const activity of activities) {
+    const key = toDateKey(activity.date);
+    const list = activitiesByDay.get(key);
+    if (list) list.push(activity);
+    else activitiesByDay.set(key, [activity]);
+  }
+
+  const plannedByDay = new Map<string, typeof planned>();
+  for (const workout of planned) {
+    const key = toDateKey(workout.date);
+    const list = plannedByDay.get(key);
+    if (list) list.push(workout);
+    else plannedByDay.set(key, [workout]);
+  }
+
   const days: MonthDayData[] = gridDays.map((date) => {
     const key = toDateKey(date);
     return {
       date,
       key,
       isCurrentMonth: date.getUTCMonth() === monthStart.getUTCMonth(),
-      activities: activities.filter((a) => toDateKey(a.date) === key),
-      planned: planned.filter((p) => toDateKey(p.date) === key),
+      activities: activitiesByDay.get(key) ?? [],
+      planned: plannedByDay.get(key) ?? [],
     };
   });
 

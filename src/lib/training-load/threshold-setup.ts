@@ -19,6 +19,24 @@ export interface ThresholdSetup {
   isActive: boolean;
 }
 
+type ActivityStats = {
+  total: number;
+  with_hr: number;
+  with_tss: number;
+};
+
+async function getActivityStats(userId: string): Promise<ActivityStats> {
+  const [row] = await prisma.$queryRaw<ActivityStats[]>`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT("avgHr")::int AS with_hr,
+      COUNT(tss)::int AS with_tss
+    FROM "Activity"
+    WHERE "userId" = ${userId}
+  `;
+  return row ?? { total: 0, with_hr: 0, with_tss: 0 };
+}
+
 function buildMethod(ftp: number | null, pace: number | null, hr: number | null): ThresholdMethod | null {
   const hasPower = ftp !== null;
   const hasPace = pace !== null;
@@ -43,10 +61,7 @@ export const getThresholdSetup = cache(async (userId: string): Promise<Threshold
   const method = buildMethod(ftpWatts, thresholdPaceSecPerKm, hrThresholdBpm);
 
   if (hrMaxBpm) {
-    const [totalActivities, activitiesWithTss] = await Promise.all([
-      prisma.activity.count({ where: { userId } }),
-      prisma.activity.count({ where: { userId, tss: { not: null } } }),
-    ]);
+    const { total: totalActivities, with_tss: activitiesWithTss } = await getActivityStats(userId);
     const tssCoverage = totalActivities > 0 ? activitiesWithTss / totalActivities : 0;
 
     return {
@@ -65,16 +80,16 @@ export const getThresholdSetup = cache(async (userId: string): Promise<Threshold
     };
   }
 
-  const [totalActivities, activitiesWithHr, activitiesWithTss, peakHr] = await Promise.all([
-    prisma.activity.count({ where: { userId } }),
-    prisma.activity.count({ where: { userId, avgHr: { not: null } } }),
-    prisma.activity.count({ where: { userId, tss: { not: null } } }),
+  const [stats, peakHr] = await Promise.all([
+    getActivityStats(userId),
     prisma.activity.findFirst({
       where: { userId, avgHr: { not: null }, durationSec: { gte: 600 } },
       orderBy: { avgHr: "desc" },
       select: { avgHr: true },
     }),
   ]);
+
+  const { total: totalActivities, with_hr: activitiesWithHr, with_tss: activitiesWithTss } = stats;
 
   const tssCoverage = totalActivities > 0 ? activitiesWithTss / totalActivities : 0;
 

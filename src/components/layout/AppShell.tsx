@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
+import { useShellData } from "@/components/layout/ShellProvider";
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return "?";
@@ -18,18 +18,9 @@ function getInitials(name: string | null | undefined): string {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const [userName, setUserName] = useState<string | null>(null);
-  const [userImage, setUserImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data: { user?: { name?: string | null; image?: string | null } }) => {
-        setUserName(data.user?.name ?? null);
-        setUserImage(data.user?.image ?? null);
-      })
-      .catch(() => {});
-  }, []);
+  const shell = useShellData();
+  const userName = shell?.userName ?? null;
+  const userImage = shell?.userImage ?? null;
 
   return (
     <div className="app-shell-root flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden">

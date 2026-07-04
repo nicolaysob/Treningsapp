@@ -145,9 +145,9 @@ export default async function Home({
       where: { id: userId },
       select: { weeklyTssGoal: true, raceName: true, raceDate: true },
     }),
-    prisma.activity.aggregate({
+    prisma.dailyLoad.aggregate({
       where: { userId, date: { gte: weekStart, lt: weekEnd } },
-      _sum: { tss: true },
+      _sum: { dailyTss: true },
     }),
     getThresholdSetup(userId),
   ]);
@@ -162,7 +162,7 @@ export default async function Home({
     tsb: row.tsb,
   }));
 
-  const weekTss = weekTssResult._sum.tss ?? 0;
+  const weekTss = weekTssResult._sum.dailyTss ?? 0;
 
   const now = new Date();
   const daysToRace = user?.raceDate

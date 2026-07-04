@@ -46,15 +46,14 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
       const res = await fetch("/api/sync/run", { method: "POST", credentials: "same-origin" });
       if (!res.ok) throw new Error("sync failed");
 
-      await new Promise((resolve) => setTimeout(resolve, 4500));
-      router.refresh();
+      // Sync runs in background (after()) — refresh with delay so data is ready.
+      setTimeout(() => router.refresh(), 3000);
+      setTimeout(() => router.refresh(), 8000);
       setPullState("done");
       setTimeout(() => {
         setPullState("idle");
         setPull(0);
       }, 1200);
-
-      setTimeout(() => router.refresh(), 8000);
     } catch {
       setPullState("error");
       setTimeout(() => {

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useShellData } from "@/components/layout/ShellProvider";
 
 const NAV_ITEMS = [
   {
@@ -69,14 +69,8 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const [pendingFriends, setPendingFriends] = useState(0);
-
-  useEffect(() => {
-    fetch("/api/friends/pending-count")
-      .then((res) => res.json())
-      .then((data: { count?: number }) => setPendingFriends(data.count ?? 0))
-      .catch(() => setPendingFriends(0));
-  }, [pathname]);
+  const shell = useShellData();
+  const pendingFriends = shell?.pendingFriends ?? 0;
 
   return (
     <nav
