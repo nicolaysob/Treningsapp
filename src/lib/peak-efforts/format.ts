@@ -1,5 +1,5 @@
 export const RUN_DISTANCES_M = [1000, 5000, 10000, 21097, 42195] as const;
-export const RIDE_DISTANCES_M = [5000, 10000, 20000, 40000, 100000] as const;
+export const RIDE_DISTANCES_M = [10000, 20000, 30000, 40000, 50000, 80000, 100000] as const;
 
 export const DISTANCE_LABELS: Record<number, string> = {
   1000: "1 km",
@@ -8,7 +8,10 @@ export const DISTANCE_LABELS: Record<number, string> = {
   21097: "Halvmaraton",
   42195: "Maraton",
   20000: "20 km",
+  30000: "30 km",
   40000: "40 km",
+  50000: "50 km",
+  80000: "80 km",
   100000: "100 km",
 };
 
