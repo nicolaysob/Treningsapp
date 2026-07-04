@@ -5,7 +5,7 @@ import { syncUserFully } from "@/lib/sync-user";
 export const maxDuration = 300;
 
 /**
- * Hourly sync for all Strava-connected users. Triggered by Vercel Cron;
+ * Daily sync for all Strava-connected users. Triggered by Vercel Cron (once/day on Hobby);
  * requires CRON_SECRET in Authorization header (set automatically by Vercel).
  */
 export async function GET(request: Request) {
