@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db";
-import { bestTimeForDistance, type DistanceSample } from "./distance-window";
-import { RIDE_DISTANCES_M, RUN_DISTANCES_M } from "./format";
+import {
+  pickBestTimesFromActivities,
+  distanceTargets,
+  normalizedTimeSec,
+  activityMatchesTarget,
+} from "./best-times";
 import type { Sport } from "@prisma/client";
 
 export type BestTimeMetric = "time";
@@ -8,67 +12,26 @@ export type BestTimeMetric = "time";
 export interface BestTimeCandidate {
   distanceM: number;
   metric: BestTimeMetric;
-  value: number; // elapsed seconds — lower is better
+  value: number;
 }
 
-function distanceTargets(sport: Sport): readonly number[] {
-  return sport === "RUN" ? RUN_DISTANCES_M : RIDE_DISTANCES_M;
-}
-
-function activityMatchTolerance(targetM: number): number {
-  return targetM <= 10000 ? 0.02 : 0.01;
-}
-
-function activityMatchesDistance(distanceM: number, targetM: number): boolean {
-  return Math.abs(distanceM - targetM) / targetM <= activityMatchTolerance(targetM);
-}
-
-function candidateFromStreams(
-  sport: Sport,
-  distance: DistanceSample[],
-  targetM: number,
-): BestTimeCandidate | null {
-  const best = bestTimeForDistance(distance, targetM, sport);
-  if (best === null) return null;
-  return { distanceM: targetM, metric: "time", value: best };
-}
-
-function candidateFromActivity(
-  sport: Sport,
-  distanceM: number | null,
-  durationSec: number,
-  targetM: number,
-): BestTimeCandidate | null {
-  if (!distanceM || distanceM <= 0 || durationSec <= 0) return null;
-  if (!activityMatchesDistance(distanceM, targetM)) return null;
-  return { distanceM: targetM, metric: "time", value: durationSec };
-}
-
-/**
- * For near-exact race distances, Strava's activity moving_time is more reliable
- * than noisy GPS streams. For longer sessions, use the fastest stream segment.
- */
 export function computeBestTimeCandidates(
   sport: Sport,
-  streams: { distance: DistanceSample[] },
-  activity?: { distanceM: number | null; durationSec: number },
+  activity: { distanceM: number | null; durationSec: number },
 ): BestTimeCandidate[] {
+  if (!activity.distanceM || activity.distanceM <= 0 || activity.durationSec <= 0) {
+    return [];
+  }
+
   const candidates: BestTimeCandidate[] = [];
 
   for (const targetM of distanceTargets(sport)) {
-    const activityCandidate = activity
-      ? candidateFromActivity(sport, activity.distanceM, activity.durationSec, targetM)
-      : null;
-    const streamCandidate = candidateFromStreams(sport, streams.distance, targetM);
-
-    if (activityCandidate) {
-      candidates.push(activityCandidate);
-      continue;
-    }
-
-    if (streamCandidate) {
-      candidates.push(streamCandidate);
-    }
+    if (!activityMatchesTarget(activity.distanceM, targetM)) continue;
+    candidates.push({
+      distanceM: targetM,
+      metric: "time",
+      value: normalizedTimeSec(activity.durationSec, activity.distanceM, targetM),
+    });
   }
 
   return candidates;
@@ -80,10 +43,6 @@ export interface DetectedPr {
   value: number;
 }
 
-/**
- * Compares candidates against stored bests per [sport, distance] bucket.
- * `PeakEffort.durationSec` stores distance in meters; `value` stores time in seconds.
- */
 export async function detectAndStorePeaks(
   userId: string,
   activityId: string,

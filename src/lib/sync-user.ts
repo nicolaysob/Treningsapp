@@ -10,7 +10,7 @@ export async function syncUserFully(userId: string) {
   revalidateUserCache(userId);
 }
 
-/** Detect best times from Strava streams — slow, run separately from sync. */
+/** Update stored best times from synced activities — run after activity sync. */
 export async function syncUserPeaks(userId: string) {
   await processNewActivityPeaks(userId);
 }

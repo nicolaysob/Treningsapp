@@ -5,19 +5,13 @@ import {
   formatSpeedKmh,
 } from "@/lib/peak-efforts/format";
 import { formatDateNb } from "@/lib/date";
-
-export interface BestTimeRow {
-  distanceM: number;
-  label: string;
-  timeSec: number | null;
-  achievedAt: Date | null;
-}
+import type { BestTimeRecord } from "@/lib/peak-efforts/best-times";
 
 export function BestTimesList({
   data,
   sport,
 }: {
-  data: BestTimeRow[];
+  data: BestTimeRecord[];
   sport: "RUN" | "RIDE";
 }) {
   return (
@@ -29,6 +23,9 @@ export function BestTimesList({
             {row.timeSec !== null && row.achievedAt && (
               <p className="mt-0.5 text-xs text-zinc-600">
                 {formatDateNb(row.achievedAt, { day: "numeric", month: "short", year: "numeric" })}
+                {row.actualDistanceM && row.actualDistanceM !== row.distanceM && (
+                  <> · {(row.actualDistanceM / 1000).toFixed(2)} km</>
+                )}
                 {" · "}
                 {sport === "RUN"
                   ? formatPace(row.timeSec / (row.distanceM / 1000))
