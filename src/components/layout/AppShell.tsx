@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { BottomNav } from "@/components/layout/BottomNav";
 
@@ -18,28 +18,6 @@ function getInitials(name: string | null | undefined): string {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
-  const shellRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function syncHeight() {
-      const el = shellRef.current;
-      if (!el) return;
-      const height = window.visualViewport?.height ?? window.innerHeight;
-      el.style.height = `${height}px`;
-      el.style.maxHeight = `${height}px`;
-    }
-
-    syncHeight();
-    window.addEventListener("resize", syncHeight);
-    window.addEventListener("orientationchange", syncHeight);
-    window.visualViewport?.addEventListener("resize", syncHeight);
-
-    return () => {
-      window.removeEventListener("resize", syncHeight);
-      window.removeEventListener("orientationchange", syncHeight);
-      window.visualViewport?.removeEventListener("resize", syncHeight);
-    };
-  }, []);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -51,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div ref={shellRef} className="app-bg flex h-dvh max-h-dvh flex-col overflow-hidden">
+    <div className="app-bg flex h-[100vh] min-h-[100vh] flex-col overflow-hidden">
       <header className="shrink-0 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 glass-header">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
@@ -72,7 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain mx-auto w-full max-w-3xl px-4 pt-4 sm:px-6 sm:pt-5 [-webkit-overflow-scrolling:touch]">
+      <main className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 pt-4 sm:px-6 sm:pt-5 [-webkit-overflow-scrolling:touch]">
         {children}
       </main>
 

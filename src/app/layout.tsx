@@ -74,14 +74,14 @@ export default function RootLayout({
   return (
     <html
       lang="nb"
-      className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${geistMono.variable} h-[100vh] antialiased`}
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: appShellScript }} />
       </head>
-      <body className="h-full antialiased">
+      <body className="h-[100vh] overflow-hidden bg-background antialiased">
         <ThemeProvider>
           <AppChrome>{children}</AppChrome>
         </ThemeProvider>

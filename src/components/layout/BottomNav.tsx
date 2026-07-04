@@ -3,9 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/** Bump when testing iOS layout — visible in bottom nav to confirm fresh deploy. */
-const BUILD_TAG = "v10";
-
 const NAV_ITEMS = [
   {
     href: "/",
@@ -74,7 +71,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="shrink-0 bg-background px-3 pt-1.5 [padding-bottom:max(0.5rem,env(safe-area-inset-bottom))]"
+      className="shrink-0 bg-background px-3 pt-1.5 pb-2"
       aria-label="Hovedmeny"
     >
       <div className="mx-auto max-w-lg nav-island">
@@ -98,7 +95,6 @@ export function BottomNav() {
           })}
         </div>
       </div>
-      <p className="pointer-events-none text-center text-[7px] text-zinc-700">{BUILD_TAG}</p>
     </nav>
   );
 }
