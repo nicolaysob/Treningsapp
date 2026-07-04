@@ -1,18 +1,37 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
-import type { ShellData } from "@/lib/shell-data";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+
+export type ShellData = {
+  userName: string | null;
+  userImage: string | null;
+};
 
 const ShellContext = createContext<ShellData | null>(null);
 
-export function ShellProvider({
-  value,
-  children,
-}: {
-  value: ShellData | null;
-  children: ReactNode;
-}) {
-  return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>;
+export function ShellProvider({ children }: { children: ReactNode }) {
+  const [data, setData] = useState<ShellData | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/auth/session")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((session) => {
+        if (cancelled) return;
+        setData({
+          userName: session?.user?.name ?? null,
+          userImage: session?.user?.image ?? null,
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return <ShellContext.Provider value={data}>{children}</ShellContext.Provider>;
 }
 
 export function useShellData(): ShellData | null {

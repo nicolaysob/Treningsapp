@@ -1,8 +1,19 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useShellData } from "@/components/layout/ShellProvider";
+
+function NavPendingDot() {
+  const { pending } = useLinkStatus();
+  if (!pending) return null;
+  return (
+    <span
+      className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-[#ff6b2b]"
+      aria-hidden
+    />
+  );
+}
 
 const NAV_ITEMS = [
   {
@@ -69,8 +80,14 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const shell = useShellData();
-  const pendingFriends = shell?.pendingFriends ?? 0;
+  const [pendingFriends, setPendingFriends] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/friends/pending-count")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { count?: number } | null) => setPendingFriends(data?.count ?? 0))
+      .catch(() => setPendingFriends(0));
+  }, [pathname]);
 
   return (
     <nav
@@ -85,12 +102,12 @@ export function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                prefetch={false}
                 scroll={false}
                 className={`bottom-nav__item relative ${active ? "nav-item-active text-[#ff6b2b]" : "text-zinc-600"}`}
               >
                 <span className="relative">
                   {item.icon}
+                  <NavPendingDot />
                   {item.href === "/friends" && pendingFriends > 0 && (
                     <span className="nav-badge" aria-label={`${pendingFriends} ventende forespørsler`}>
                       {pendingFriends > 9 ? "9+" : pendingFriends}

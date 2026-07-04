@@ -22,7 +22,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
-        return { id: user.id, name: user.name, image: user.image };
+        return {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+          username: user.username,
+        };
       },
     }),
   ],
@@ -38,6 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.sub = user.id;
         token.name = user.name;
         token.picture = user.image;
+        token.username = user.username ?? null;
       }
       return token;
     },
@@ -45,17 +51,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!token.sub) return session;
 
       session.user.id = token.sub;
-
-      const dbUser = await prisma.user.findUnique({
-        where: { id: token.sub },
-        select: { name: true, image: true, username: true },
-      });
-
-      if (dbUser) {
-        session.user.name = dbUser.name;
-        session.user.image = dbUser.image;
-        session.user.username = dbUser.username;
-      }
+      session.user.name = (token.name as string | null | undefined) ?? null;
+      session.user.image = (token.picture as string | null | undefined) ?? null;
+      session.user.username = (token.username as string | null | undefined) ?? null;
 
       return session;
     },
