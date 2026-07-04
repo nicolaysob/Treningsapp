@@ -80,20 +80,18 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
 
     const onTouchMove = (e: TouchEvent) => {
       if (!isDragging.current || stateRef.current === "syncing") return;
+      if (!isAtScrollTop(el)) {
+        setPull(0);
+        return;
+      }
       if (e.touches.length !== 1) return;
 
       const dy = e.touches[0].clientY - startY.current;
-
-      if (!isAtScrollTop(el) || dy < 0) {
-        isDragging.current = false;
-        setPull(0);
-        if (stateRef.current === "pulling") setPullState("idle");
-        return;
-      }
-
-      if (dy > 10) {
+      if (dy > 0) {
         e.preventDefault();
         setPull(Math.min(dy * 0.5, MAX_PULL));
+      } else {
+        setPull(0);
       }
     };
 
@@ -140,7 +138,7 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
   return (
     <main
       ref={scrollRef}
-      className="app-shell__main ptr-scroll mx-auto w-full max-w-3xl pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pt-5"
+      className="ptr-scroll mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pt-5 [-webkit-overflow-scrolling:touch]"
     >
       <div className="ptr-indicator" style={{ height: indicatorHeight }} aria-live="polite">
         <div
@@ -155,7 +153,6 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
       </div>
 
       {children}
-      <div className="h-2 shrink-0" aria-hidden />
     </main>
   );
 }

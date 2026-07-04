@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { APP_VERSION } from "@/lib/app-version";
 
 const NAV_ITEMS = [
   {
@@ -81,11 +80,11 @@ export function BottomNav() {
 
   return (
     <nav
-      className="bottom-nav"
+      className="shrink-0 bg-background pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
       aria-label="Hovedmeny"
     >
-      <div className="bottom-nav__inner nav-island">
-        <div className="flex items-center justify-around px-0.5 py-1.5">
+      <div className="mx-auto max-w-lg nav-island">
+        <div className="flex items-stretch justify-around px-0.5 py-1.5">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             return (
@@ -112,9 +111,6 @@ export function BottomNav() {
           })}
         </div>
       </div>
-      <p className="pointer-events-none text-center text-[9px] font-bold tracking-wider text-[#ff6b2b]/80">
-        {APP_VERSION}
-      </p>
     </nav>
   );
 }

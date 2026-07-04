@@ -8,16 +8,6 @@ const nextConfig: NextConfig = {
   // still use `next build --webpack` since next-pwa's service worker
   // generation itself requires webpack.
   turbopack: {},
-  async headers() {
-    return [
-      {
-        source: "/((?!_next/static|_next/image|icons/|favicon.ico).*)",
-        headers: [
-          { key: "Cache-Control", value: "no-store, must-revalidate" },
-        ],
-      },
-    ];
-  },
 };
 
 const withPWA = withPWAInit({

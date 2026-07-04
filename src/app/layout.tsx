@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AppChrome } from "@/components/layout/AppChrome";
-import { PwaRefresh } from "@/components/pwa/PwaRefresh";
-import { APP_VERSION } from "@/lib/app-version";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -55,11 +53,6 @@ const themeScript = `
 const appShellScript = `
 (function() {
   try {
-    if ('caches' in window) {
-      caches.keys().then(function(names) {
-        names.forEach(function(name) { caches.delete(name); });
-      });
-    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         regs.forEach(function(r) { r.unregister(); });
@@ -81,20 +74,16 @@ export default function RootLayout({
   return (
     <html
       lang="nb"
-      className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${geistMono.variable} h-[100dvh] antialiased`}
       suppressHydrationWarning
     >
       <head>
-        <meta name="app-version" content="${APP_VERSION}" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: appShellScript }} />
       </head>
-      <body className="h-full overflow-hidden bg-background antialiased">
+      <body className="h-[100dvh] overflow-hidden bg-background antialiased">
         <ThemeProvider>
-          <PwaRefresh />
-          <div className="h-full min-h-0">
-            <AppChrome>{children}</AppChrome>
-          </div>
+          <AppChrome>{children}</AppChrome>
         </ThemeProvider>
       </body>
     </html>

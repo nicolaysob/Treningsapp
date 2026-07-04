@@ -250,76 +250,15 @@ body {
   border-color: rgba(61, 214, 140, 0.2);
 }
 
-/* App shell — flex layout, only main scrolls (iOS-safe) */
-html {
-  height: 100%;
-  height: -webkit-fill-available;
-}
-
+/* App shell — height chain handled via Tailwind h-dvh on html/body/shell */
 html.app-locked,
 body.app-locked {
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
-}
-
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100dvh;
-  max-height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.app-shell__header {
-  flex-shrink: 0;
-  padding-top: max(0.75rem, var(--safe-top));
-  padding-left: max(1rem, var(--safe-left));
-  padding-right: max(1rem, var(--safe-right));
-}
-
-@media (min-width: 640px) {
-  .app-shell__header {
-    padding-left: max(1.5rem, var(--safe-left));
-    padding-right: max(1.5rem, var(--safe-right));
-  }
-}
-
-.app-shell__main,
-.ptr-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.bottom-nav {
-  flex-shrink: 0;
-  z-index: 20;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--background);
-  padding: 0.5rem max(0.75rem, var(--safe-left)) max(0.25rem, var(--safe-bottom))
-    max(0.75rem, var(--safe-right));
-}
-
-.bottom-nav__inner {
-  max-width: 32rem;
-  margin: 0 auto;
-}
-
-@media (max-width: 639px) {
-  .bottom-nav__inner.nav-island {
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: transparent;
-  }
 }
 
 /* Pull-to-refresh */
