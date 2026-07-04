@@ -16,7 +16,7 @@ export async function syncUserFullyWithBestTimes(userId: string) {
   await processAllActivityPeaks(userId);
 }
 
-/** Update stored best times from synced activities. */
+/** Import Strava best_efforts after activity sync. */
 export async function syncUserPeaks(userId: string) {
   await processAllActivityPeaks(userId);
 }

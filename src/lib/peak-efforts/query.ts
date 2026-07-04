@@ -1,77 +1,53 @@
 import { prisma } from "@/lib/db";
 import { DISTANCE_LABELS } from "./format";
-import {
-  pickBestTimesFromActivities,
-  type BestTimeRecord,
-} from "./best-times";
-import { isOutdoorCycling } from "@/lib/strava/sport-type";
+import { distanceTargets } from "./best-times";
+import { isOutdoorCycling, isOutdoorRun } from "@/lib/strava/sport-type";
+import type { BestTimeRecord } from "./best-times";
 import type { Sport } from "@prisma/client";
-
-function mergeBestTimeRecords(
-  targets: readonly number[],
-  fromActivities: BestTimeRecord[],
-  fromPeaks: BestTimeRecord[],
-): BestTimeRecord[] {
-  return targets.map((distanceM) => {
-    const activity = fromActivities.find((r) => r.distanceM === distanceM);
-    const peak = fromPeaks.find((r) => r.distanceM === distanceM);
-
-    if (!activity?.timeSec) return peak ?? activity ?? emptyRecord(distanceM);
-    if (!peak?.timeSec) return activity;
-
-    return activity.timeSec <= peak.timeSec ? activity : peak;
-  });
-}
-
-function emptyRecord(distanceM: number): BestTimeRecord {
-  return {
-    distanceM,
-    label: DISTANCE_LABELS[distanceM],
-    timeSec: null,
-    achievedAt: null,
-    actualDistanceM: null,
-  };
-}
 
 export async function getBestTimesForUser(
   userId: string,
   sport: Sport,
 ): Promise<BestTimeRecord[]> {
-  const [activities, peaks] = await Promise.all([
-    prisma.activity.findMany({
-      where: { userId, sport, distanceM: { not: null } },
-      select: { durationSec: true, distanceM: true, date: true, raw: true },
-    }),
-    prisma.peakEffort.findMany({
-      where: { userId, sport, metric: "time" },
-      select: {
-        durationSec: true,
-        value: true,
-        achievedAt: true,
-        activity: { select: { raw: true } },
-      },
-    }),
-  ]);
+  const targets = distanceTargets(sport);
 
-  const eligibleActivities =
-    sport === "RIDE"
-      ? activities.filter((a) => isOutdoorCycling(a.raw))
-      : activities;
+  const peaks = await prisma.peakEffort.findMany({
+    where: { userId, sport, metric: "time" },
+    select: {
+      durationSec: true,
+      value: true,
+      achievedAt: true,
+      activity: { select: { raw: true } },
+    },
+  });
 
-  const eligiblePeaks =
+  const eligible =
     sport === "RIDE"
       ? peaks.filter((p) => !p.activity || isOutdoorCycling(p.activity.raw))
-      : peaks;
+      : sport === "RUN"
+        ? peaks.filter((p) => !p.activity || isOutdoorRun(p.activity.raw))
+        : peaks;
 
-  const fromActivities = pickBestTimesFromActivities(sport, eligibleActivities);
-  const fromPeaks: BestTimeRecord[] = eligiblePeaks.map((row) => ({
-    distanceM: row.durationSec,
-    label: DISTANCE_LABELS[row.durationSec] ?? `${row.durationSec / 1000} km`,
-    timeSec: row.value,
-    achievedAt: row.achievedAt,
-    actualDistanceM: row.durationSec,
-  }));
+  return targets.map((distanceM) => {
+    const matches = eligible.filter((p) => p.durationSec === distanceM);
+    if (matches.length === 0) {
+      return {
+        distanceM,
+        label: DISTANCE_LABELS[distanceM],
+        timeSec: null,
+        achievedAt: null,
+        actualDistanceM: null,
+      };
+    }
 
-  const targets = fromActivities.map((r) => r.distanceM);
-  return mergeBestTimeRecords(targets, fromActivities, fromPeaks);
+    const best = matches.reduce((a, b) => (a.value < b.value ? a : b));
+
+    return {
+      distanceM,
+      label: DISTANCE_LABELS[distanceM],
+      timeSec: best.value,
+      achievedAt: best.achievedAt,
+      actualDistanceM: distanceM,
+    };
+  });
 }
