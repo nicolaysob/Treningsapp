@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { PullToRefresh } from "@/components/layout/PullToRefresh";
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return "?";
@@ -50,9 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 pt-4 sm:px-6 sm:pt-5 [-webkit-overflow-scrolling:touch]">
-        {children}
-      </main>
+      <PullToRefresh>{children}</PullToRefresh>
 
       <BottomNav />
     </div>

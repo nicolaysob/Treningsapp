@@ -122,7 +122,10 @@ export default async function SettingsPage({
 
                 <SettingsDivider />
 
-                <SettingsRow title="Synk aktiviteter" description="Automatisk én gang daglig">
+                <SettingsRow
+                  title="Synk aktiviteter"
+                  description="Dra ned på en side, eller trykk her. Automatisk én gang daglig."
+                >
                   <form action={handleSync}>
                     <SubmitButton size="sm" pendingLabel="Synker…">
                       Synk nå

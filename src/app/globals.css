@@ -259,6 +259,56 @@ body.app-locked {
   overscroll-behavior: none;
 }
 
+/* Pull-to-refresh */
+.ptr-scroll {
+  touch-action: pan-y;
+}
+
+.ptr-indicator {
+  overflow: hidden;
+  transition: height 0.2s ease;
+}
+
+.ptr-indicator__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 52px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.ptr-indicator__content--active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ptr-spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 107, 43, 0.2);
+  border-top-color: #ff6b2b;
+}
+
+.ptr-spinner--active {
+  animation: ptr-spin 0.7s linear infinite;
+}
+
+.ptr-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .bottom-nav__item {
   display: flex;
   flex: 1;
