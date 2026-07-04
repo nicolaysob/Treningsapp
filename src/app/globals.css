@@ -528,13 +528,6 @@ body.app-locked {
   border-radius: 1rem;
 }
 
-.friend-tss-badge {
-  font-family: ui-monospace, monospace;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #ff8f4c;
-}
-
 .friend-remove-btn {
   display: flex;
   align-items: center;
@@ -568,20 +561,6 @@ body.app-locked {
   font-size: 2.5rem;
   line-height: 1;
   margin-bottom: 0.75rem;
-}
-
-.friend-empty__link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #ff8f4c;
-  transition: color 0.2s ease;
-}
-
-.friend-empty__link:hover {
-  color: #ff6b2b;
 }
 
 .friend-avatar {
