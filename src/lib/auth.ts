@@ -42,8 +42,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.sub = user.id;
         token.name = user.name;
-        token.picture = user.image;
         token.username = user.username ?? null;
+        // Profile photos are data URLs — never store them in the session cookie.
       }
       return token;
     },
@@ -52,8 +52,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       session.user.id = token.sub;
       session.user.name = (token.name as string | null | undefined) ?? null;
-      session.user.image = (token.picture as string | null | undefined) ?? null;
       session.user.username = (token.username as string | null | undefined) ?? null;
+
+      const row = await prisma.user.findUnique({
+        where: { id: token.sub },
+        select: { image: true },
+      });
+      session.user.image = row?.image ?? null;
 
       return session;
     },

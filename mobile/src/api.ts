@@ -30,7 +30,7 @@ export async function login(
   username: string,
   password: string,
 ): Promise<{ token: string; user: MobileUser }> {
-  const res = await fetch(`${API_URL}/api/auth/mobile/login`, {
+  const res = await fetch(`${API_URL}/api/mobile/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
