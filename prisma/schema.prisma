@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                     String   @id @default(cuid())
+  name                   String?
+  username               String?  @unique
+  passwordHash           String?
+  email                  String?  @unique
+  image                  String?
+  stravaAthleteId        BigInt?  @unique
+  ftpWatts               Int?
+  thresholdPaceSecPerKm  Int?
+  hrThresholdBpm         Int?
+  weeklyTssGoal          Int?
+  raceName               String?
+  raceDate               DateTime?
+  emailVerified          DateTime?
+  createdAt              DateTime @default(now())
+
+  accounts        Account[]
+  sessions        Session[]
+  activities      Activity[]
+  dailyLoad       DailyLoad[]
+  peakEfforts     PeakEffort[]
+  plannedWorkouts PlannedWorkout[]
+
+  sentFriendRequests     Friendship[] @relation("FriendshipRequester")
+  receivedFriendRequests Friendship[] @relation("FriendshipAddressee")
+}
+
+// --- NextAuth required models ---
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  access_token      String? @db.Text
+  refresh_token     String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Domain models ---
+enum Sport {
+  RIDE
+  RUN
+  SWIM
+  STRENGTH
+  OTHER
+}
+
+model Activity {
+  id               String   @id @default(cuid())
+  userId           String
+  stravaActivityId BigInt   @unique
+  date             DateTime
+  sport            Sport
+  durationSec      Int
+  distanceM        Float?
+  avgWatts         Float?
+  npWatts          Float?
+  avgHr            Int?
+  elevationM       Float?
+  avgPaceSecPerKm  Int?
+  tss              Float?
+  tssMethod        String?
+  raw              Json?
+  streamsFetchedAt DateTime?
+  createdAt        DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  peakEfforts PeakEffort[]
+
+  @@index([userId, date])
+  @@index([userId, sport, date])
+}
+
+model DailyLoad {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime
+  dailyTss Float    @default(0)
+  ctl      Float
+  atl      Float
+  tsb      Float
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model PeakEffort {
+  id          String   @id @default(cuid())
+  userId      String
+  sport       Sport
+  metric      String
+  durationSec Int
+  value       Float
+  achievedAt  DateTime
+  activityId  String?
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, sport, metric, durationSec])
+  @@index([userId, sport, metric])
+}
+
+model PlannedWorkout {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime
+  sport       Sport
+  description String
+  durationMin Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+}

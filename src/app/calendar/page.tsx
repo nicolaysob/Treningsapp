@@ -1,0 +1,92 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { startOfMonth, getMonthGridDays, toDateKey } from "@/lib/date";
+import { MonthView, type MonthDayData } from "@/components/calendar/MonthView";
+import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { WeekNav } from "@/components/ui/SegmentedNav";
+import { Card } from "@/components/ui/Card";
+
+const MONTH_LABELS = [
+  "januar",
+  "februar",
+  "mars",
+  "april",
+  "mai",
+  "juni",
+  "juli",
+  "august",
+  "september",
+  "oktober",
+  "november",
+  "desember",
+];
+
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+  const userId = session.user.id;
+
+  const { month: monthParam } = await searchParams;
+  const monthStart = monthParam ? startOfMonth(new Date(monthParam)) : startOfMonth(new Date());
+
+  const gridDays = getMonthGridDays(monthStart);
+  const gridStart = gridDays[0];
+  const gridEnd = new Date(gridDays[gridDays.length - 1]);
+  gridEnd.setUTCDate(gridEnd.getUTCDate() + 1);
+
+  const [activities, planned] = await Promise.all([
+    prisma.activity.findMany({
+      where: { userId, date: { gte: gridStart, lt: gridEnd } },
+      orderBy: { date: "asc" },
+    }),
+    prisma.plannedWorkout.findMany({
+      where: { userId, date: { gte: gridStart, lt: gridEnd } },
+      orderBy: { date: "asc" },
+    }),
+  ]);
+
+  const days: MonthDayData[] = gridDays.map((date) => {
+    const key = toDateKey(date);
+    return {
+      date,
+      key,
+      isCurrentMonth: date.getUTCMonth() === monthStart.getUTCMonth(),
+      activities: activities.filter((a) => toDateKey(a.date) === key),
+      planned: planned.filter((p) => toDateKey(p.date) === key),
+    };
+  });
+
+  const prevMonth = new Date(
+    Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() - 1, 1),
+  );
+  const nextMonth = new Date(
+    Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1),
+  );
+
+  return (
+    <AppShell userName={session.user.name}>
+      <PageHeader
+        title="Kalender"
+        subtitle="Hold over en dag og trykk + for å planlegge"
+      />
+
+      <div className="flex flex-col gap-4">
+        <WeekNav
+          prevHref={`/calendar?month=${toDateKey(prevMonth)}`}
+          nextHref={`/calendar?month=${toDateKey(nextMonth)}`}
+          label={`${MONTH_LABELS[monthStart.getUTCMonth()]} ${monthStart.getUTCFullYear()}`}
+        />
+
+        <Card padding="lg">
+          <MonthView days={days} todayKey={toDateKey(new Date())} />
+        </Card>
+      </div>
+    </AppShell>
+  );
+}

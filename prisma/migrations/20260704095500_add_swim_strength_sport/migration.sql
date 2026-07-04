@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "Sport" ADD VALUE 'SWIM';
+ALTER TYPE "Sport" ADD VALUE 'STRENGTH';
