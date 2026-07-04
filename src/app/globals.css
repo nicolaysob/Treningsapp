@@ -291,19 +291,15 @@ body.app-locked {
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(var(--bottom-nav-size) + var(--safe-bottom));
+  padding-bottom: calc(var(--bottom-nav-size, 3.5rem) + var(--safe-bottom-px, env(safe-area-inset-bottom, 0px)));
 }
 
 .bottom-nav {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1000;
   background: var(--background);
   border-top: 1px solid var(--border-subtle);
-  padding: 0.375rem max(0.75rem, var(--safe-right)) var(--safe-bottom)
-    max(0.75rem, var(--safe-left));
+  padding-top: 0.375rem;
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
 }
 
 .bottom-nav__inner {

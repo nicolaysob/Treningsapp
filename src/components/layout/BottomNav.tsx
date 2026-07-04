@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 
@@ -63,6 +63,23 @@ const NAV_ITEMS = [
   },
 ];
 
+function measureSafeAreaBottom(): number {
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);";
+  document.body.appendChild(probe);
+  const measured = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+  document.body.removeChild(probe);
+
+  if (measured > 0) return measured;
+
+  const isStandalone =
+    ("standalone" in navigator && (navigator as Navigator & { standalone?: boolean }).standalone) ||
+    window.matchMedia("(display-mode: standalone)").matches;
+
+  return isStandalone ? 34 : 0;
+}
+
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname.startsWith(href);
@@ -70,12 +87,42 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
   const [pendingFriends, setPendingFriends] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [safeBottom, setSafeBottom] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const syncLayout = () => {
+      const safe = measureSafeAreaBottom();
+      setSafeBottom(safe);
+      document.documentElement.style.setProperty("--safe-bottom-px", `${safe}px`);
+
+      const nav = navRef.current;
+      if (nav) {
+        document.documentElement.style.setProperty("--bottom-nav-size", `${nav.offsetHeight}px`);
+      }
+    };
+
+    syncLayout();
+    window.addEventListener("orientationchange", () => setTimeout(syncLayout, 150));
+    window.addEventListener("resize", syncLayout);
+
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const observer = new ResizeObserver(syncLayout);
+    observer.observe(nav);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncLayout);
+    };
+  }, [mounted]);
 
   useEffect(() => {
     fetch("/api/friends/pending-count")
@@ -85,7 +132,19 @@ export function BottomNav() {
   }, [pathname]);
 
   const nav = (
-    <nav className="bottom-nav" aria-label="Hovedmeny">
+    <nav
+      ref={navRef}
+      className="bottom-nav"
+      aria-label="Hovedmeny"
+      style={{
+        position: "fixed",
+        right: 0,
+        bottom: 0,
+        left: 0,
+        zIndex: 1000,
+        paddingBottom: safeBottom > 0 ? `${safeBottom}px` : undefined,
+      }}
+    >
       <div className="bottom-nav__inner">
         <div className="flex items-stretch justify-around px-0.5 py-1">
           {NAV_ITEMS.map((item) => {
