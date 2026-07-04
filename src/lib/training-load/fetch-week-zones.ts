@@ -1,6 +1,5 @@
 import { formatDateNb, startOfIsoWeek, toDateKey } from "@/lib/date";
 import { prisma } from "@/lib/db";
-import { syncActivityZones } from "@/lib/strava/sync-zones";
 import {
   buildWeeklyZoneDistribution,
   type WeeklyZoneDistribution,
@@ -16,8 +15,6 @@ export async function fetchWeeklyZoneDistribution(
   });
 
   if (!user?.hrMaxBpm) return null;
-
-  await syncActivityZones(userId);
 
   const anchor = new Date();
   anchor.setUTCDate(anchor.getUTCDate() + weekOffset * 7);

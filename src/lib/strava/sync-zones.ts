@@ -49,7 +49,14 @@ export async function syncActivityZones(userId: string): Promise<{ processed: nu
 
   if (activities.length === 0) return { processed: 0 };
 
-  const accessToken = await ensureFreshToken(userId);
+  let accessToken: string;
+  try {
+    accessToken = await ensureFreshToken(userId);
+  } catch (err) {
+    console.error("Zone sync skipped — no Strava token", err);
+    return { processed: 0 };
+  }
+
   let processed = 0;
 
   for (const activity of activities) {

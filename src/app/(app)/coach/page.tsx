@@ -20,7 +20,7 @@ export default async function CoachPage({
   const [context, setup, zoneDistribution] = await Promise.all([
     fetchTrainingInsightContext(userId),
     getThresholdSetup(userId),
-    fetchWeeklyZoneDistribution(userId),
+    fetchWeeklyZoneDistribution(userId).catch(() => null),
   ]);
 
   if (!context) {
