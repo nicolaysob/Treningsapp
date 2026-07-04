@@ -209,10 +209,6 @@ export function CoachReportView({ report }: { report: CoachReport }) {
           ))}
         </div>
       </section>
-
-      <p className="coach-footer text-center text-xs text-zinc-600">
-        Gratis regelbasert coach — ingen ekstern AI. Basert på Strava-data, PMC og dine mål.
-      </p>
     </div>
   );
 }
@@ -231,9 +227,7 @@ export function CoachTeaser({
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-bold text-zinc-100">Treningscoach</p>
-        <p className="truncate text-sm text-zinc-500">
-          {headline ?? "Personlig analyse basert på dine data"}
-        </p>
+        <p className="truncate text-sm text-zinc-500">{headline ?? "Åpne coach"}</p>
       </div>
       {readiness !== null && (
         <div className="coach-teaser__score">

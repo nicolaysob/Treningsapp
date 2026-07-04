@@ -17,6 +17,7 @@ model User {
   ftpWatts               Int?
   thresholdPaceSecPerKm  Int?
   hrThresholdBpm         Int?
+  hrMaxBpm               Int?
   weeklyTssGoal          Int?
   raceName               String?
   raceDate               DateTime?
@@ -91,6 +92,11 @@ model Activity {
   avgPaceSecPerKm  Int?
   tss              Float?
   tssMethod        String?
+  zoneS1Sec        Int?
+  zoneS2Sec        Int?
+  zoneS3Sec        Int?
+  zoneS4Sec        Int?
+  zoneS5Sec        Int?
   raw              Json?
   streamsFetchedAt DateTime?
   createdAt        DateTime @default(now())

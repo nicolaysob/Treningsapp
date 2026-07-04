@@ -1,0 +1,13 @@
+ALTER TABLE "User" ADD COLUMN "hrMaxBpm" INTEGER;
+
+ALTER TABLE "Activity" ADD COLUMN "zoneS1Sec" INTEGER;
+ALTER TABLE "Activity" ADD COLUMN "zoneS2Sec" INTEGER;
+ALTER TABLE "Activity" ADD COLUMN "zoneS3Sec" INTEGER;
+ALTER TABLE "Activity" ADD COLUMN "zoneS4Sec" INTEGER;
+ALTER TABLE "Activity" ADD COLUMN "zoneS5Sec" INTEGER;
+
+ALTER TABLE "Activity" DROP COLUMN IF EXISTS "zoneEasySec";
+ALTER TABLE "Activity" DROP COLUMN IF EXISTS "zoneModerateSec";
+ALTER TABLE "Activity" DROP COLUMN IF EXISTS "zoneHardSec";
+
+UPDATE "Activity" SET "streamsFetchedAt" = NULL;

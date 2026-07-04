@@ -3,9 +3,11 @@ import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
 import { deletePlannedWorkout } from "@/app/(app)/calendar/actions";
 import { startOfIsoWeek, formatDateNb } from "@/lib/date";
+import { getThresholdSetup } from "@/lib/training-load/threshold-setup";
 import { PmcChartLazy } from "@/components/pmc/PmcChartLazy";
 import { TsbGauge } from "@/components/pmc/TsbGauge";
 import { CoachTeaser } from "@/components/coach/CoachReport";
+import { ThresholdQuickSetup } from "@/components/settings/ThresholdQuickSetup";
 import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { BentoStat } from "@/components/ui/BentoStat";
@@ -48,10 +50,10 @@ function getWeekdayGreeting(): string {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ days?: string }>;
+  searchParams: Promise<{ days?: string; saved?: string }>;
 }) {
   const { userId, userName } = await requireUserId();
-  const { days: daysParam } = await searchParams;
+  const { days: daysParam, saved } = await searchParams;
   const days = PERIOD_OPTIONS.includes(Number(daysParam)) ? Number(daysParam) : DEFAULT_DAYS;
 
   const since = new Date();
@@ -65,7 +67,7 @@ export default async function Home({
   const weekEnd = new Date(weekStart);
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
 
-  const [dailyLoad, latestLoad, upcomingPlanned, user, weekTssResult] = await Promise.all([
+  const [dailyLoad, latestLoad, upcomingPlanned, user, weekTssResult, setup] = await Promise.all([
     prisma.dailyLoad.findMany({
       where: { userId, date: { gte: since } },
       orderBy: { date: "asc" },
@@ -89,6 +91,7 @@ export default async function Home({
       where: { userId, date: { gte: weekStart, lt: weekEnd } },
       _sum: { tss: true },
     }),
+    getThresholdSetup(userId),
   ]);
 
   const chartData = dailyLoad.map((row) => ({
@@ -119,6 +122,9 @@ export default async function Home({
 
   return (
     <div className="flex flex-col gap-5">
+        {saved === "hr" && (
+          <p className="text-center text-sm font-semibold text-emerald-400">Makspuls aktivert</p>
+        )}
         <div className="hero-card animate-in flex items-center justify-between gap-4 p-5 sm:p-6">
           <div className="relative z-10 min-w-0">
             <p className="section-label text-orange-400/80">{getWeekdayGreeting()}</p>
@@ -128,7 +134,9 @@ export default async function Home({
             <p className="mt-1 text-sm text-zinc-500">
               {latestLoad
                 ? `Fitness ${latestLoad.ctl.toFixed(0)} · Fatigue ${latestLoad.atl.toFixed(0)}`
-                : "Synk Strava for å komme i gang"}
+                : setup.needsHrMaxSetup
+                  ? "Sett makspuls"
+                  : "Synk Strava"}
             </p>
           </div>
           <div className="relative z-10 shrink-0">
@@ -142,6 +150,10 @@ export default async function Home({
             <BentoStat label="Fatigue" value={latestLoad.atl.toFixed(0)} unit="ATL" variant="orange" />
             <BentoStat label="Uke" value={weekTss.toFixed(0)} unit="TSS" variant="green" />
           </div>
+        )}
+
+        {setup.needsHrMaxSetup && (
+          <ThresholdQuickSetup setup={setup} compact returnTo="/" />
         )}
 
         {coachPreview && (

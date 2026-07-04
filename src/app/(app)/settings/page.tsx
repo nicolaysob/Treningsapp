@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { getThresholdSetup } from "@/lib/training-load/threshold-setup";
 import { AccountProfileForm } from "@/components/settings/AccountProfileForm";
 import { StravaAccountRow } from "@/components/settings/StravaAccountRow";
 import {
@@ -39,7 +40,7 @@ export default async function SettingsPage({
   const { userId } = await requireUserId();
   const { error, sync, profile } = await searchParams;
 
-  const [user, stravaAccount] = await Promise.all([
+  const [user, stravaAccount, setup] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, username: true, image: true },
@@ -48,6 +49,7 @@ export default async function SettingsPage({
       where: { userId, provider: "strava" },
       select: { id: true },
     }),
+    getThresholdSetup(userId),
   ]);
 
   if (!user) redirect("/login");
@@ -83,7 +85,13 @@ export default async function SettingsPage({
             <SettingsLink
               href="/settings/training"
               title="Trening"
-              description="Mål, terskler og TSS"
+              description={
+                setup.isActive && setup.method
+                  ? `Aktiv · ${setup.method === "hr" ? "puls" : setup.method === "power" ? "watt" : setup.method === "pace" ? "tempo" : "full"}`
+                  : setup.needsHrMaxSetup
+                    ? "Trenger makspuls"
+                    : "Ikke satt"
+              }
             />
           </Card>
         </SettingsGroup>
