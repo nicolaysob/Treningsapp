@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { APP_VERSION } from "@/lib/app-version";
 
 const NAV_ITEMS = [
   {
@@ -111,6 +112,7 @@ export function BottomNav() {
           })}
         </div>
       </div>
+      <p className="pointer-events-none text-center text-[7px] text-zinc-700">{APP_VERSION}</p>
     </nav>
   );
 }

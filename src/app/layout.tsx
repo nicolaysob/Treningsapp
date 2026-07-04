@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AppChrome } from "@/components/layout/AppChrome";
+import { PwaRefresh } from "@/components/pwa/PwaRefresh";
+import { APP_VERSION } from "@/lib/app-version";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -53,20 +55,15 @@ const themeScript = `
 const appShellScript = `
 (function() {
   try {
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        names.forEach(function(name) { caches.delete(name); });
+      });
+    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         regs.forEach(function(r) { r.unregister(); });
       });
-    }
-    function setAppHeight() {
-      var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      document.documentElement.style.setProperty('--app-height', h + 'px');
-    }
-    setAppHeight();
-    window.addEventListener('resize', setAppHeight);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setAppHeight);
-      window.visualViewport.addEventListener('scroll', setAppHeight);
     }
     var path = location.pathname;
     if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
@@ -88,12 +85,16 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <meta name="app-version" content="${APP_VERSION}" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: appShellScript }} />
       </head>
       <body className="h-full overflow-hidden bg-background antialiased">
         <ThemeProvider>
-          <AppChrome>{children}</AppChrome>
+          <PwaRefresh />
+          <div className="h-full min-h-0">
+            <AppChrome>{children}</AppChrome>
+          </div>
         </ThemeProvider>
       </body>
     </html>
