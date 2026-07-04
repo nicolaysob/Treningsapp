@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
@@ -59,6 +60,14 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const [pendingFriends, setPendingFriends] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/friends/pending-count")
+      .then((res) => res.json())
+      .then((data: { count?: number }) => setPendingFriends(data.count ?? 0))
+      .catch(() => setPendingFriends(0));
+  }, [pathname]);
 
   return (
     <nav
@@ -75,9 +84,16 @@ export function BottomNav() {
                 href={item.href}
                 prefetch={false}
                 scroll={false}
-                className={`bottom-nav__item ${active ? "nav-item-active text-[#ff6b2b]" : "text-zinc-600"}`}
+                className={`bottom-nav__item relative ${active ? "nav-item-active text-[#ff6b2b]" : "text-zinc-600"}`}
               >
-                {item.icon}
+                <span className="relative">
+                  {item.icon}
+                  {item.href === "/friends" && pendingFriends > 0 && (
+                    <span className="nav-badge" aria-label={`${pendingFriends} ventende forespørsler`}>
+                      {pendingFriends > 9 ? "9+" : pendingFriends}
+                    </span>
+                  )}
+                </span>
                 <span className={`text-[8px] font-bold tracking-wide sm:text-[9px] ${active ? "text-[#ff6b2b]" : ""}`}>
                   {item.label}
                 </span>

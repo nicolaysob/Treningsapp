@@ -1,16 +1,15 @@
+import Link from "next/link";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import {
-  sendFriendRequest,
-  acceptFriendRequest,
-  declineFriendRequest,
-  removeFriend,
-} from "@/app/(app)/friends/actions";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Card } from "@/components/ui/Card";
+import { startOfIsoWeek } from "@/lib/date";
+import { getWeeklyLeaderboard } from "@/lib/leaderboard/weekly";
+import { AddFriendForm } from "@/components/friends/AddFriendForm";
+import { FriendCard, FriendsEmpty } from "@/components/friends/FriendCard";
+import { FriendsWeekPreview } from "@/components/friends/FriendsWeekPreview";
+import { IncomingRequests } from "@/components/friends/IncomingRequests";
+import { OutgoingRequests } from "@/components/friends/OutgoingRequests";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { Field, Input } from "@/components/ui/Input";
+import { BentoStat } from "@/components/ui/BentoStat";
 
 const ERROR_MESSAGES: Record<string, string> = {
   notfound: "Fant ingen bruker med det brukernavnet.",
@@ -24,7 +23,6 @@ export default async function FriendsPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { userId } = await requireUserId();
-
   const { error } = await searchParams;
 
   const [incoming, outgoing, accepted] = await Promise.all([
@@ -53,117 +51,86 @@ export default async function FriendsPage({
     user: f.requesterId === userId ? f.addressee : f.requester,
   }));
 
+  const friendIds = friends.map((f) => f.user.id);
+  const weekRows =
+    friendIds.length > 0
+      ? await getWeeklyLeaderboard(startOfIsoWeek(new Date()), [userId, ...friendIds])
+      : [];
+  const tssByUserId = new Map(weekRows.map((r) => [r.userId, r.totalTss]));
+
+  const myWeekTss = tssByUserId.get(userId) ?? 0;
+
   return (
-    <>
-      <PageHeader title="Venner" subtitle="Legg til venner for å konkurrere på leaderboard" />
+    <div className="flex flex-col gap-5">
+      <div className="hero-card animate-in p-5 sm:p-6">
+        <div className="relative z-10">
+          <p className="section-label text-orange-400/80">Treningsgjengen</p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+            Venner
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            {friends.length > 0
+              ? `${friends.length} ${friends.length === 1 ? "venn" : "venner"} · konkurrer på duell`
+              : "Legg til venner og konkurrer på ukentlig duell"}
+          </p>
+          <AddFriendForm />
+        </div>
+      </div>
 
       {error && ERROR_MESSAGES[error] && <Alert>{ERROR_MESSAGES[error]}</Alert>}
 
-      <div className="flex flex-col gap-5">
-        <Card>
-          <form action={sendFriendRequest} className="flex items-end gap-3">
-            <Field label="Legg til venn (brukernavn)" className="flex-1">
-              <Input type="text" name="username" required autoCapitalize="off" />
-            </Field>
-            <Button type="submit" size="sm">
-              Send
-            </Button>
-          </form>
-        </Card>
-
-        {incoming.length > 0 && (
-          <section className="flex flex-col gap-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Innkommende forespørsler
-            </h2>
-            <Card padding="none">
-              {incoming.map((f, i) => (
-                <div
-                  key={f.id}
-                  className={`flex items-center justify-between px-4 py-3 ${i > 0 ? "border-t border-zinc-800/80" : ""}`}
-                >
-                  <span className="font-medium text-zinc-100">
-                    {f.requester.name ?? f.requester.username}
-                  </span>
-                  <div className="flex gap-2">
-                    <form action={acceptFriendRequest}>
-                      <input type="hidden" name="id" value={f.id} />
-                      <Button type="submit" size="sm">
-                        Godta
-                      </Button>
-                    </form>
-                    <form action={declineFriendRequest}>
-                      <input type="hidden" name="id" value={f.id} />
-                      <Button type="submit" variant="secondary" size="sm">
-                        Avslå
-                      </Button>
-                    </form>
-                  </div>
-                </div>
-              ))}
-            </Card>
-          </section>
-        )}
-
-        {outgoing.length > 0 && (
-          <section className="flex flex-col gap-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              Sendte forespørsler
-            </h2>
-            <Card padding="none">
-              {outgoing.map((f, i) => (
-                <div
-                  key={f.id}
-                  className={`flex items-center justify-between px-4 py-3 ${i > 0 ? "border-t border-zinc-800/80" : ""}`}
-                >
-                  <span className="font-medium text-zinc-100">
-                    {f.addressee.name ?? f.addressee.username}
-                  </span>
-                  <span className="text-sm text-zinc-500">Venter…</span>
-                </div>
-              ))}
-            </Card>
-          </section>
-        )}
-
-        <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            Venner ({friends.length})
-          </h2>
-          {friends.length === 0 ? (
-            <Card>
-              <p className="text-sm text-zinc-500">
-                Ingen venner ennå. Legg til noen ovenfor for å se dem på leaderboard.
-              </p>
-            </Card>
-          ) : (
-            <Card padding="none">
-              {friends.map(({ friendshipId, user }, i) => (
-                <div
-                  key={friendshipId}
-                  className={`flex items-center justify-between px-4 py-3 ${i > 0 ? "border-t border-zinc-800/80" : ""}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-sm font-medium text-zinc-300">
-                      {(user.name ?? user.username ?? "?")[0].toUpperCase()}
-                    </div>
-                    <span className="font-medium text-zinc-100">{user.name ?? user.username}</span>
-                  </div>
-                  <form action={removeFriend}>
-                    <input type="hidden" name="id" value={friendshipId} />
-                    <button
-                      type="submit"
-                      className="text-sm text-zinc-500 transition-colors hover:text-red-400"
-                    >
-                      Fjern
-                    </button>
-                  </form>
-                </div>
-              ))}
-            </Card>
-          )}
-        </section>
+      <div className="grid grid-cols-3 gap-2">
+        <BentoStat label="Venner" value={String(friends.length)} variant="orange" />
+        <BentoStat
+          label="Ventende"
+          value={String(incoming.length)}
+          variant="blue"
+        />
+        <BentoStat
+          label="Din TSS"
+          value={myWeekTss > 0 ? myWeekTss.toFixed(0) : "—"}
+          unit={myWeekTss > 0 ? "uke" : undefined}
+          variant="green"
+        />
       </div>
-    </>
+
+      <IncomingRequests requests={incoming} />
+
+      {friends.length > 0 && (
+        <FriendsWeekPreview rows={weekRows} currentUserId={userId} />
+      )}
+
+      <OutgoingRequests requests={outgoing} />
+
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="section-label">Gjengen</h2>
+          {friends.length > 0 && (
+            <Link
+              href="/leaderboard"
+              className="text-xs font-semibold text-zinc-500 transition-colors hover:text-[#ff8f4c]"
+            >
+              Duell →
+            </Link>
+          )}
+        </div>
+
+        {friends.length === 0 ? (
+          <FriendsEmpty />
+        ) : (
+          <div className="flex flex-col gap-2">
+            {friends.map(({ friendshipId, user }) => (
+              <FriendCard
+                key={friendshipId}
+                friendshipId={friendshipId}
+                name={user.name}
+                username={user.username}
+                weekTss={tssByUserId.get(user.id) ?? 0}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
