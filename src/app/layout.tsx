@@ -77,7 +77,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: appShellScript }} />
       </head>
-      <body className="h-full antialiased">
+      <body className="min-h-dvh h-full antialiased">
         <ThemeProvider>
           <PwaRefresh />
           <AppChrome>{children}</AppChrome>

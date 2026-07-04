@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-bg app-shell">
-      <header className="app-shell__header glass-header px-4 pt-3 sm:px-6">
+      <header className="app-shell__header glass-header sm:px-6">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <AppLogo size="sm" />
