@@ -604,6 +604,33 @@ body.app-locked {
   color: #ff8f4c;
 }
 
+.cal-day-empty {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: rgba(255, 107, 43, 0.5);
+}
+
+.cal-day-summary {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.cal-dot--done {
+  background: #3dd68c;
+}
+
+.cal-dot--planned {
+  border: 1.5px solid #ff6b2b;
+  background: transparent;
+}
+
+.cal-dot--strava {
+  background: #4d9fff;
+}
+
 .cal-pill {
   display: flex;
   align-items: flex-start;

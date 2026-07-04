@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { PlannedWorkout } from "@prisma/client";
 import { DayDetailSheet } from "@/components/calendar/DayDetailSheet";
 
@@ -12,21 +12,6 @@ export type CalendarActivity = {
 };
 
 const WEEKDAY_LABELS = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
-const SPORT_LABELS: Record<string, string> = {
-  RIDE: "Sykkel",
-  RUN: "Løping",
-  SWIM: "Svømming",
-  STRENGTH: "Styrke",
-  OTHER: "Annet",
-};
-
-const SPORT_ICONS: Record<string, string> = {
-  RIDE: "🚴",
-  RUN: "🏃",
-  SWIM: "🏊",
-  STRENGTH: "💪",
-  OTHER: "⚡",
-};
 
 export type CalendarPlannedWorkout = {
   id: string;
@@ -44,40 +29,29 @@ export interface MonthDayData {
   planned: CalendarPlannedWorkout[];
 }
 
-type SessionPreview = {
-  key: string;
-  icon: string;
-  label: string;
-  variant: "done" | "planned" | "activity";
+type DaySummary = {
+  done: number;
+  planned: number;
+  strava: number;
 };
 
-function buildSessionPreviews(day: MonthDayData): SessionPreview[] {
+function summarizeDay(day: MonthDayData): DaySummary {
   const remainingPlanned = [...day.planned];
-  const previews: SessionPreview[] = [];
+  let done = 0;
 
   for (const activity of day.activities) {
-    const matchIndex = remainingPlanned.findIndex((p) => p.sport === activity.sport);
-    const matched = matchIndex === -1 ? null : remainingPlanned.splice(matchIndex, 1)[0];
-    previews.push({
-      key: activity.id,
-      icon: SPORT_ICONS[activity.sport] ?? "⚡",
-      label: matched
-        ? `${SPORT_LABELS[activity.sport]} ✓`
-        : `${SPORT_LABELS[activity.sport]} ${Math.round(activity.durationSec / 60)}m`,
-      variant: matched ? "done" : "activity",
-    });
+    const idx = remainingPlanned.findIndex((p) => p.sport === activity.sport);
+    if (idx !== -1) {
+      done++;
+      remainingPlanned.splice(idx, 1);
+    }
   }
 
-  for (const p of remainingPlanned) {
-    previews.push({
-      key: p.id,
-      icon: SPORT_ICONS[p.sport] ?? "⚡",
-      label: p.description.length > 14 ? `${p.description.slice(0, 14)}…` : p.description,
-      variant: "planned",
-    });
-  }
-
-  return previews;
+  return {
+    done,
+    planned: remainingPlanned.length,
+    strava: day.activities.length - done,
+  };
 }
 
 function dayClassName(day: MonthDayData, todayKey: string): string {
@@ -88,6 +62,9 @@ function dayClassName(day: MonthDayData, todayKey: string): string {
 
 export function MonthView({ days, todayKey }: { days: MonthDayData[]; todayKey: string }) {
   const [selectedDay, setSelectedDay] = useState<MonthDayData | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   return (
     <>
@@ -99,8 +76,8 @@ export function MonthView({ days, todayKey }: { days: MonthDayData[]; todayKey: 
 
       <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
         {days.map((day) => {
-          const previews = buildSessionPreviews(day);
-          const extra = previews.length > 2 ? previews.length - 2 : 0;
+          const summary = summarizeDay(day);
+          const total = summary.done + summary.planned + summary.strava;
 
           return (
             <button
@@ -109,35 +86,38 @@ export function MonthView({ days, todayKey }: { days: MonthDayData[]; todayKey: 
               onClick={() => setSelectedDay(day)}
               className={`cal-day-btn ${dayClassName(day, todayKey)}`}
             >
-              <div className="flex items-center justify-between">
-                <p className={day.key === todayKey ? "cal-day-num cal-day-num--today" : "cal-day-num"}>
-                  {day.date.getUTCDate()}
-                </p>
-                {previews.length === 0 && (
-                  <span className="cal-day-add" aria-hidden>
-                    +
-                  </span>
-                )}
-              </div>
+              <p className={day.key === todayKey ? "cal-day-num cal-day-num--today" : "cal-day-num"}>
+                {day.date.getUTCDate()}
+              </p>
 
-              <div className="mt-1 flex flex-col gap-0.5">
-                {previews.slice(0, 2).map((item) => (
-                  <div
-                    key={item.key}
-                    className={`cal-pill cal-pill--${item.variant}`}
-                  >
-                    <span className="shrink-0">{item.icon}</span>
-                    <span className="line-clamp-2 leading-tight">{item.label}</span>
+              {total > 0 ? (
+                <div className="mt-1 flex flex-col items-start gap-1">
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from({ length: summary.done }).map((_, i) => (
+                      <span key={`d-${i}`} className="cal-dot cal-dot--done" title="Planlagt og gjort" />
+                    ))}
+                    {Array.from({ length: summary.planned }).map((_, i) => (
+                      <span key={`p-${i}`} className="cal-dot cal-dot--planned" title="Planlagt" />
+                    ))}
+                    {Array.from({ length: summary.strava }).map((_, i) => (
+                      <span key={`s-${i}`} className="cal-dot cal-dot--strava" title="Gjennomført" />
+                    ))}
                   </div>
-                ))}
-                {extra > 0 && <span className="cal-pill-more">+{extra} til</span>}
-              </div>
+                  <span className="cal-day-summary">
+                    {summary.done > 0 && `${summary.done} utført`}
+                    {summary.done > 0 && summary.planned > 0 && " · "}
+                    {summary.planned > 0 && `${summary.planned} plan`}
+                  </span>
+                </div>
+              ) : (
+                <span className="cal-day-empty">+</span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {selectedDay && (
+      {mounted && selectedDay && (
         <DayDetailSheet day={selectedDay} onClose={() => setSelectedDay(null)} />
       )}
     </>

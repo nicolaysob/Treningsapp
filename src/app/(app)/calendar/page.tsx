@@ -82,6 +82,17 @@ export default async function CalendarPage({
         />
 
         <Card padding="lg">
+          <div className="mb-4 flex flex-wrap gap-3 text-xs text-zinc-500">
+            <span className="flex items-center gap-1.5">
+              <span className="cal-dot cal-dot--done" /> Utført plan
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="cal-dot cal-dot--planned" /> Planlagt
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="cal-dot cal-dot--strava" /> Strava (ikke plan)
+            </span>
+          </div>
           <MonthView days={days} todayKey={toDateKey(new Date())} />
         </Card>
       </div>

@@ -10,6 +10,11 @@ export function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** Parse YYYY-MM-DD from calendar grid as UTC noon (avoids timezone day-shift). */
+export function parseCalendarDateKey(key: string): Date {
+  return new Date(`${key}T12:00:00.000Z`);
+}
+
 /** Safe for cached/JSON data where dates may arrive as strings. */
 export function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value);
