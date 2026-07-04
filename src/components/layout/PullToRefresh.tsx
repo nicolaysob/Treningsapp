@@ -74,24 +74,27 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
       if (e.touches.length !== 1) return;
 
       startY.current = e.touches[0].clientY;
-      isDragging.current = true;
-      setPullState("pulling");
+      isDragging.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!isDragging.current || stateRef.current === "syncing") return;
-      if (!isAtScrollTop(el)) {
-        setPull(0);
-        return;
-      }
+      if (stateRef.current === "syncing") return;
       if (e.touches.length !== 1) return;
 
       const dy = e.touches[0].clientY - startY.current;
-      if (dy > 0) {
+
+      if (!isAtScrollTop(el) || dy < 0) {
+        isDragging.current = false;
+        setPull(0);
+        if (stateRef.current === "pulling") setPullState("idle");
+        return;
+      }
+
+      if (dy > 12) {
+        isDragging.current = true;
+        setPullState("pulling");
         e.preventDefault();
         setPull(Math.min(dy * 0.5, MAX_PULL));
-      } else {
-        setPull(0);
       }
     };
 
@@ -138,7 +141,7 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
   return (
     <main
       ref={scrollRef}
-      className="ptr-scroll mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pt-5 [-webkit-overflow-scrolling:touch]"
+      className="app-shell__scroll ptr-scroll mx-auto w-full max-w-3xl pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pt-5"
     >
       <div className="ptr-indicator" style={{ height: indicatorHeight }} aria-live="polite">
         <div
