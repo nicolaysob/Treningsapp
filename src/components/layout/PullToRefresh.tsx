@@ -138,7 +138,7 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
   return (
     <main
       ref={scrollRef}
-      className="ptr-scroll mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pt-5 [-webkit-overflow-scrolling:touch]"
+      className="app-shell__main ptr-scroll mx-auto w-full max-w-3xl pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-4 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pt-5"
     >
       <div className="ptr-indicator" style={{ height: indicatorHeight }} aria-live="polite">
         <div
@@ -153,6 +153,7 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
       </div>
 
       {children}
+      <div className="h-2 shrink-0" aria-hidden />
     </main>
   );
 }

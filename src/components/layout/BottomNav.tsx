@@ -80,10 +80,10 @@ export function BottomNav() {
 
   return (
     <nav
-      className="shrink-0 bg-background pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      className="bottom-nav"
       aria-label="Hovedmeny"
     >
-      <div className="mx-auto max-w-lg nav-island">
+      <div className="bottom-nav__inner nav-island">
         <div className="flex items-stretch justify-around px-0.5 py-1.5">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
