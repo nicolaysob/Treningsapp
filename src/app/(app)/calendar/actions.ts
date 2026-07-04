@@ -30,6 +30,7 @@ export async function createPlannedWorkout(formData: FormData) {
   });
 
   revalidatePath("/calendar");
+  revalidatePath("/");
 }
 
 export async function deletePlannedWorkout(formData: FormData) {
@@ -44,4 +45,5 @@ export async function deletePlannedWorkout(formData: FormData) {
   });
 
   revalidatePath("/calendar");
+  revalidatePath("/");
 }
