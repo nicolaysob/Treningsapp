@@ -2,8 +2,11 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { HomeScreen } from "../screens/HomeScreen";
+import { CalendarScreen } from "../screens/CalendarScreen";
+import { CoachScreen } from "../screens/CoachScreen";
+import { LeaderboardScreen } from "../screens/LeaderboardScreen";
+import { FriendsScreen } from "../screens/FriendsScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
-import { PlaceholderScreen } from "../components/PlaceholderScreen";
 import { colors } from "../theme";
 
 export type AppTabParamList = {
@@ -64,54 +67,10 @@ export function AppTabs() {
         })}
       >
         <Tab.Screen name="Hjem" component={HomeScreen} options={{ headerShown: false }} />
-        <Tab.Screen
-          name="Kalender"
-          options={{ title: "Kalender" }}
-        >
-          {() => (
-            <PlaceholderScreen
-              emoji="📅"
-              title="Kalender"
-              subtitle="Planlegg og se økter — kommer snart med samme data som nettappen."
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen
-          name="Coach"
-          options={{ title: "Coach" }}
-        >
-          {() => (
-            <PlaceholderScreen
-              emoji="✨"
-              title="Coach"
-              subtitle="Full coach-rapport med ukeplan og soner — bygges i neste steg."
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen
-          name="Duell"
-          options={{ title: "Duell" }}
-        >
-          {() => (
-            <PlaceholderScreen
-              emoji="🏆"
-              title="Duell"
-              subtitle="Ukentlig leaderboard mot venner — kommer snart."
-            />
-          )}
-        </Tab.Screen>
-        <Tab.Screen
-          name="Venner"
-          options={{ title: "Venner" }}
-        >
-          {() => (
-            <PlaceholderScreen
-              emoji="👥"
-              title="Venner"
-              subtitle="Legg til venner og se forespørsler — kommer snart."
-            />
-          )}
-        </Tab.Screen>
+        <Tab.Screen name="Kalender" component={CalendarScreen} options={{ title: "Kalender" }} />
+        <Tab.Screen name="Coach" component={CoachScreen} options={{ title: "Coach" }} />
+        <Tab.Screen name="Duell" component={LeaderboardScreen} options={{ title: "Duell" }} />
+        <Tab.Screen name="Venner" component={FriendsScreen} options={{ title: "Venner" }} />
         <Tab.Screen name="Mer" component={SettingsScreen} options={{ title: "Mer" }} />
       </Tab.Navigator>
     </NavigationContainer>
