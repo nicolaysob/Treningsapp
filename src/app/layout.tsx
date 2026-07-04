@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AppChrome } from "@/components/layout/AppChrome";
+import { PwaRefresh } from "@/components/pwa/PwaRefresh";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -50,6 +51,17 @@ const themeScript = `
 })();
 `;
 
+const appShellScript = `
+(function() {
+  try {
+    var path = location.pathname;
+    if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
+    document.documentElement.classList.add('app-locked');
+    document.body.classList.add('app-locked');
+  } catch(e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -63,9 +75,11 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: appShellScript }} />
       </head>
-      <body className="antialiased">
+      <body className="h-full antialiased">
         <ThemeProvider>
+          <PwaRefresh />
           <AppChrome>{children}</AppChrome>
         </ThemeProvider>
       </body>
