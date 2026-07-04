@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { ensureFreshToken } from "@/lib/strava/tokens";
 import { fetchActivityStreams } from "@/lib/strava/streams";
 import { StravaApiError } from "@/lib/strava/client";
-import { computePeakEffortCandidates, detectAndStorePeaks, type DetectedPr } from "./detect";
+import { computeBestTimeCandidates, detectAndStorePeaks, type DetectedPr } from "./detect";
 
 const MAX_ACTIVITIES_PER_RUN = 20;
 
@@ -12,17 +12,22 @@ export interface ProcessPeaksResult {
 }
 
 /**
- * Fetches streams and detects peak efforts only for activities that have
- * never been processed (streamsFetchedAt is null) — this is the one
- * rate-limit-relevant step in the app, so it's capped per run and bails out
- * cleanly on 429. Safe to re-run: unprocessed activities are picked up on
- * the next sync since the guard is persisted per-activity.
+ * Fetches distance streams and detects best times only for activities that
+ * have never been processed (streamsFetchedAt is null).
  */
 export async function processNewActivityPeaks(userId: string): Promise<ProcessPeaksResult> {
   const candidates = await prisma.activity.findMany({
     where: { userId, streamsFetchedAt: null, sport: { in: ["RIDE", "RUN"] } },
     orderBy: { date: "desc" },
     take: MAX_ACTIVITIES_PER_RUN,
+    select: {
+      id: true,
+      stravaActivityId: true,
+      sport: true,
+      date: true,
+      distanceM: true,
+      durationSec: true,
+    },
   });
 
   const result: ProcessPeaksResult = { processed: 0, newRecords: [] };
@@ -32,8 +37,24 @@ export async function processNewActivityPeaks(userId: string): Promise<ProcessPe
 
   for (const activity of candidates) {
     try {
-      const streams = await fetchActivityStreams(activity.stravaActivityId, accessToken);
-      const effortCandidates = computePeakEffortCandidates(activity.sport, streams);
+      let effortCandidates;
+      try {
+        const streams = await fetchActivityStreams(activity.stravaActivityId, accessToken);
+        effortCandidates = computeBestTimeCandidates(activity.sport, streams, {
+          distanceM: activity.distanceM,
+          durationSec: activity.durationSec,
+        });
+      } catch (streamErr) {
+        if (streamErr instanceof StravaApiError && streamErr.status === 429) {
+          throw streamErr;
+        }
+        effortCandidates = computeBestTimeCandidates(
+          activity.sport,
+          { distance: [] },
+          { distanceM: activity.distanceM, durationSec: activity.durationSec },
+        );
+      }
+
       const prs = await detectAndStorePeaks(
         userId,
         activity.id,
@@ -53,9 +74,7 @@ export async function processNewActivityPeaks(userId: string): Promise<ProcessPe
       if (err instanceof StravaApiError && err.status === 429) {
         break;
       }
-      console.error("Failed to process peak efforts for activity", activity.id, err);
-      // Mark as attempted so a persistently-broken activity doesn't block
-      // the queue forever.
+      console.error("Failed to process best times for activity", activity.id, err);
       await prisma.activity.update({
         where: { id: activity.id },
         data: { streamsFetchedAt: new Date() },

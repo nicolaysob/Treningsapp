@@ -6,7 +6,7 @@ export interface PowerSample {
 /**
  * Standard Coggan normalized power: 30s rolling average of the watt stream,
  * then the 4th-power mean of those rolling averages, then the 4th root.
- * Only needed when computing peak curves from raw streams — during regular
+ * Only needed when computing power metrics from raw streams — during regular
  * sync, Strava's own weighted_average_watts is used directly as NP.
  */
 export function computeNormalizedPower(samples: PowerSample[]): number | null {

@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <AppLogo size="sm" />
             <div className="hidden sm:block">
               <p className="text-sm font-bold tracking-tight text-zinc-100">Treningsapp</p>
-              <p className="text-[10px] font-medium text-zinc-600">Belastning · Duell · Peak</p>
+              <p className="text-[10px] font-medium text-zinc-600">Belastning · Duell · Tider</p>
             </div>
           </Link>
           {userName && (

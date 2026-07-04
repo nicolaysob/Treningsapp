@@ -1,66 +1,83 @@
 import { prisma } from "@/lib/db";
-import { bestRollingAverage, type StreamSample } from "./rolling-window";
+import { bestTimeForDistance, type DistanceSample } from "./distance-window";
+import { RIDE_DISTANCES_M, RUN_DISTANCES_M } from "./format";
 import type { Sport } from "@prisma/client";
 
-const DURATIONS_SEC = [5, 60, 300, 1200, 3600];
+export type BestTimeMetric = "time";
 
-export type PeakMetric = "power" | "pace";
-
-export interface PeakEffortCandidate {
-  durationSec: number;
-  metric: PeakMetric;
-  value: number; // watts, or pace as sec/km (lower = better)
+export interface BestTimeCandidate {
+  distanceM: number;
+  metric: BestTimeMetric;
+  value: number; // elapsed seconds — lower is better
 }
 
-/**
- * Time-based windowing is used for both sports for algorithmic uniformity:
- * cycling windows the watts stream directly; running windows the speed
- * stream and converts the best average speed to a pace (sec/km) afterward.
- */
-export function computePeakEffortCandidates(
-  sport: Sport,
-  streams: { watts: StreamSample[]; speed: StreamSample[] },
-): PeakEffortCandidate[] {
-  const candidates: PeakEffortCandidate[] = [];
+function distanceTargets(sport: Sport): readonly number[] {
+  return sport === "RUN" ? RUN_DISTANCES_M : RIDE_DISTANCES_M;
+}
 
-  if (sport === "RIDE" && streams.watts.length > 0) {
-    for (const durationSec of DURATIONS_SEC) {
-      const best = bestRollingAverage(streams.watts, durationSec);
-      if (best !== null) {
-        candidates.push({ durationSec, metric: "power", value: best });
-      }
-    }
-  }
+function candidatesFromStreams(sport: Sport, distance: DistanceSample[]): BestTimeCandidate[] {
+  const candidates: BestTimeCandidate[] = [];
 
-  if (sport === "RUN" && streams.speed.length > 0) {
-    for (const durationSec of DURATIONS_SEC) {
-      const bestSpeed = bestRollingAverage(streams.speed, durationSec);
-      if (bestSpeed !== null && bestSpeed > 0) {
-        candidates.push({ durationSec, metric: "pace", value: 1000 / bestSpeed });
-      }
+  for (const targetM of distanceTargets(sport)) {
+    const best = bestTimeForDistance(distance, targetM);
+    if (best !== null) {
+      candidates.push({ distanceM: targetM, metric: "time", value: best });
     }
   }
 
   return candidates;
 }
 
+function candidatesFromActivity(
+  sport: Sport,
+  distanceM: number | null,
+  durationSec: number,
+): BestTimeCandidate[] {
+  if (!distanceM || distanceM <= 0 || durationSec <= 0) return [];
+
+  const candidates: BestTimeCandidate[] = [];
+
+  for (const targetM of distanceTargets(sport)) {
+    const tolerance = targetM <= 10000 ? 0.02 : 0.01;
+    if (Math.abs(distanceM - targetM) / targetM <= tolerance) {
+      candidates.push({ distanceM: targetM, metric: "time", value: durationSec });
+    }
+  }
+
+  return candidates;
+}
+
+export function computeBestTimeCandidates(
+  sport: Sport,
+  streams: { distance: DistanceSample[] },
+  activity?: { distanceM: number | null; durationSec: number },
+): BestTimeCandidate[] {
+  const fromStreams = candidatesFromStreams(sport, streams.distance);
+  if (fromStreams.length > 0) return fromStreams;
+
+  if (activity) {
+    return candidatesFromActivity(sport, activity.distanceM, activity.durationSec);
+  }
+
+  return [];
+}
+
 export interface DetectedPr {
-  durationSec: number;
-  metric: PeakMetric;
+  distanceM: number;
+  metric: BestTimeMetric;
   value: number;
 }
 
 /**
- * Compares candidates against the stored "current record" row for each
- * [sport, metric, durationSec] bucket, upserting on improvement. Returns
- * the buckets that got a new PR from this activity.
+ * Compares candidates against stored bests per [sport, distance] bucket.
+ * `PeakEffort.durationSec` stores distance in meters; `value` stores time in seconds.
  */
 export async function detectAndStorePeaks(
   userId: string,
   activityId: string,
   sport: Sport,
   achievedAt: Date,
-  candidates: PeakEffortCandidate[],
+  candidates: BestTimeCandidate[],
 ): Promise<DetectedPr[]> {
   const prs: DetectedPr[] = [];
 
@@ -70,18 +87,12 @@ export async function detectAndStorePeaks(
         userId,
         sport,
         metric: candidate.metric,
-        durationSec: candidate.durationSec,
+        durationSec: candidate.distanceM,
       },
     };
 
     const existing = await prisma.peakEffort.findUnique({ where: key });
-
-    // Power: higher is better. Pace (sec/km): lower is better.
-    const isBetter =
-      !existing ||
-      (candidate.metric === "power"
-        ? candidate.value > existing.value
-        : candidate.value < existing.value);
+    const isBetter = !existing || candidate.value < existing.value;
 
     if (!isBetter) continue;
 
@@ -91,7 +102,7 @@ export async function detectAndStorePeaks(
         userId,
         sport,
         metric: candidate.metric,
-        durationSec: candidate.durationSec,
+        durationSec: candidate.distanceM,
         value: candidate.value,
         achievedAt,
         activityId,
@@ -99,7 +110,7 @@ export async function detectAndStorePeaks(
       update: { value: candidate.value, achievedAt, activityId },
     });
 
-    prs.push({ durationSec: candidate.durationSec, metric: candidate.metric, value: candidate.value });
+    prs.push({ distanceM: candidate.distanceM, metric: candidate.metric, value: candidate.value });
   }
 
   return prs;
