@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
-import { useAppHeight } from "@/hooks/useAppHeight";
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return "?";
@@ -21,8 +20,6 @@ function getInitials(name: string | null | undefined): string {
 export function AppShell({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
-
-  useAppHeight();
 
   useEffect(() => {
     fetch("/api/auth/session")

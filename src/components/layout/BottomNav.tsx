@@ -85,7 +85,7 @@ export function BottomNav() {
       aria-label="Hovedmeny"
     >
       <div className="bottom-nav__inner nav-island">
-        <div className="flex items-stretch justify-around px-0.5 py-1.5">
+        <div className="flex items-center justify-around px-0.5 py-1.5">
           {NAV_ITEMS.map((item) => {
             const active = isActive(pathname, item.href);
             return (
@@ -112,7 +112,9 @@ export function BottomNav() {
           })}
         </div>
       </div>
-      <p className="pointer-events-none text-center text-[7px] text-zinc-700">{APP_VERSION}</p>
+      <p className="pointer-events-none text-center text-[9px] font-bold tracking-wider text-[#ff6b2b]/80">
+        {APP_VERSION}
+      </p>
     </nav>
   );
 }

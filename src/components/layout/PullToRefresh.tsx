@@ -80,18 +80,20 @@ export function PullToRefresh({ children }: { children: ReactNode }) {
 
     const onTouchMove = (e: TouchEvent) => {
       if (!isDragging.current || stateRef.current === "syncing") return;
-      if (!isAtScrollTop(el)) {
-        setPull(0);
-        return;
-      }
       if (e.touches.length !== 1) return;
 
       const dy = e.touches[0].clientY - startY.current;
-      if (dy > 0) {
+
+      if (!isAtScrollTop(el) || dy < 0) {
+        isDragging.current = false;
+        setPull(0);
+        if (stateRef.current === "pulling") setPullState("idle");
+        return;
+      }
+
+      if (dy > 10) {
         e.preventDefault();
         setPull(Math.min(dy * 0.5, MAX_PULL));
-      } else {
-        setPull(0);
       }
     };
 

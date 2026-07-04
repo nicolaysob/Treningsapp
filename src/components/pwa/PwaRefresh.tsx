@@ -22,7 +22,11 @@ export function PwaRefresh() {
 
     void clearStaleCaches().then(() => {
       localStorage.setItem("app-version", APP_VERSION);
-      if (stored) window.location.reload();
+      if (!stored) return;
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("_v", APP_VERSION);
+      window.location.replace(url.toString());
     });
   }, []);
 
