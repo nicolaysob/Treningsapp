@@ -83,9 +83,7 @@ export default function RootLayout({
       </head>
       <body className="h-full overflow-hidden bg-background antialiased">
         <ThemeProvider>
-          <div className="h-full min-h-0">
-            <AppChrome>{children}</AppChrome>
-          </div>
+          <AppChrome>{children}</AppChrome>
         </ThemeProvider>
       </body>
     </html>
