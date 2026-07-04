@@ -2,8 +2,11 @@ import { prisma } from "@/lib/db";
 import { ensureFreshToken } from "@/lib/strava/tokens";
 import { fetchActivityDetail } from "@/lib/strava/activity-detail";
 import { StravaApiError } from "@/lib/strava/client";
-import { countsForBestTimes } from "@/lib/strava/sport-type";
-import { bestEffortsToCandidates } from "./strava-best-efforts";
+import { countsForBestTimes, isOutdoorCycling, isOutdoorRun } from "@/lib/strava/sport-type";
+import {
+  bestEffortsToCandidates,
+  activitySummaryToCandidates,
+} from "./strava-best-efforts";
 import { detectAndStorePeaks, type DetectedPr } from "./detect";
 
 const MAX_ACTIVITIES_PER_RUN = 30;
@@ -13,9 +16,13 @@ export interface ProcessPeaksResult {
   newRecords: (DetectedPr & { activityId: string })[];
 }
 
-/**
- * Fetches Strava activity details and imports official best_efforts.
- */
+export async function resetBestTimesProcessing(userId: string): Promise<void> {
+  await prisma.activity.updateMany({
+    where: { userId, sport: { in: ["RIDE", "RUN"] } },
+    data: { streamsFetchedAt: null },
+  });
+}
+
 export async function processNewActivityPeaks(userId: string): Promise<ProcessPeaksResult> {
   const candidates = await prisma.activity.findMany({
     where: { userId, streamsFetchedAt: null, sport: { in: ["RIDE", "RUN"] } },
@@ -26,6 +33,9 @@ export async function processNewActivityPeaks(userId: string): Promise<ProcessPe
       stravaActivityId: true,
       sport: true,
       date: true,
+      distanceM: true,
+      durationSec: true,
+      raw: true,
     },
   });
 
@@ -37,20 +47,39 @@ export async function processNewActivityPeaks(userId: string): Promise<ProcessPe
   for (const activity of candidates) {
     if (activity.sport !== "RUN" && activity.sport !== "RIDE") continue;
 
-    try {
-      const detail = await fetchActivityDetail(activity.stravaActivityId, accessToken);
+    const includeActivity =
+      activity.sport === "RIDE"
+        ? isOutdoorCycling(activity.raw)
+        : isOutdoorRun(activity.raw);
 
-      if (countsForBestTimes(activity.sport, detail)) {
-        const effortCandidates = bestEffortsToCandidates(
-          activity.sport,
-          detail.best_efforts ?? [],
-        );
-        const prs = await detectAndStorePeaks(
-          userId,
-          activity.id,
-          activity.sport,
-          effortCandidates,
-        );
+    try {
+      let effortCandidates: ReturnType<typeof bestEffortsToCandidates> = [];
+
+      if (includeActivity) {
+        try {
+          const detail = await fetchActivityDetail(activity.stravaActivityId, accessToken);
+
+          if (countsForBestTimes(activity.sport, detail)) {
+            effortCandidates = bestEffortsToCandidates(activity.sport, detail.best_efforts ?? []);
+          }
+        } catch (streamErr) {
+          if (streamErr instanceof StravaApiError && streamErr.status === 429) {
+            throw streamErr;
+          }
+        }
+
+        if (effortCandidates.length === 0) {
+          effortCandidates = activitySummaryToCandidates(
+            activity.sport,
+            activity.distanceM,
+            activity.durationSec,
+            activity.date,
+          );
+        }
+      }
+
+      if (effortCandidates.length > 0) {
+        const prs = await detectAndStorePeaks(userId, activity.id, activity.sport, effortCandidates);
         result.newRecords.push(...prs.map((pr) => ({ ...pr, activityId: activity.id })));
       }
 

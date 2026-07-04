@@ -3,7 +3,9 @@ import { after } from "next/server";
 import { auth, signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import { syncUserFullyWithBestTimes } from "@/lib/sync-user";
+import { syncUserFully, continueBestTimesImport } from "@/lib/sync-user";
+import { resetBestTimesProcessing, processNewActivityPeaks } from "@/lib/peak-efforts/process";
+import { revalidatePath } from "next/cache";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
@@ -23,7 +25,7 @@ const STRAVA_ERROR_MESSAGES: Record<string, string> = {
 };
 
 const SYNC_MESSAGES: Record<string, string> = {
-  started: "Synkronisering startet. Aktiviteter oppdateres i bakgrunnen.",
+  started: "Synkronisert. Beste tider oppdateres fortløpende.",
 };
 
 export default async function SettingsPage({
@@ -52,13 +54,20 @@ export default async function SettingsPage({
     const session = await auth();
     if (!session?.user?.id) return;
     const userId = session.user.id;
+
+    await syncUserFully(userId, { full: true });
+    await resetBestTimesProcessing(userId);
+    await processNewActivityPeaks(userId);
+    revalidatePath("/peak");
+
     after(async () => {
       try {
-        await syncUserFullyWithBestTimes(userId);
+        await continueBestTimesImport(userId);
       } catch (err) {
-        console.error("Background Strava sync failed", err);
+        console.error("Background best-times import failed", err);
       }
     });
+
     redirect("/settings?sync=started");
   }
 
