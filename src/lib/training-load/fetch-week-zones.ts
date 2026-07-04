@@ -1,17 +1,15 @@
+import { cache } from "react";
 import { formatDateNb, startOfIsoWeek, toDateKey } from "@/lib/date";
 import { prisma } from "@/lib/db";
-import { ensureProductionSchema } from "@/lib/db/ensure-schema";
 import {
   buildWeeklyZoneDistribution,
   type WeeklyZoneDistribution,
 } from "@/lib/training-load/intensity-zones";
 
-export async function fetchWeeklyZoneDistribution(
+export const fetchWeeklyZoneDistribution = cache(async (
   userId: string,
   weekOffset = 0,
-): Promise<WeeklyZoneDistribution | null> {
-  await ensureProductionSchema();
-
+): Promise<WeeklyZoneDistribution | null> => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { hrMaxBpm: true },
@@ -49,4 +47,4 @@ export async function fetchWeeklyZoneDistribution(
     weekStartKey,
     formatDateNb(weekEndDisplay, { day: "numeric", month: "short" }),
   );
-}
+});

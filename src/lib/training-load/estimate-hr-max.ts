@@ -1,3 +1,8 @@
+export function estimateHrMaxFromPeak(peakAvgHr: number): number {
+  return Math.min(220, Math.round(peakAvgHr + 8));
+}
+
+/** @deprecated Use estimateHrMaxFromPeak — kept for tests */
 export function estimateHrMaxFromActivities(
   activities: Array<{ avgHr: number | null; durationSec: number }>,
 ): number | null {
@@ -7,6 +12,5 @@ export function estimateHrMaxFromActivities(
 
   if (candidates.length === 0) return null;
 
-  const peak = Math.max(...candidates);
-  return Math.min(220, Math.round(peak + 8));
+  return estimateHrMaxFromPeak(Math.max(...candidates));
 }

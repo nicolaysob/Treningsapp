@@ -1,6 +1,6 @@
+import { cache } from "react";
 import { prisma } from "@/lib/db";
-import { ensureProductionSchema } from "@/lib/db/ensure-schema";
-import { estimateHrMaxFromActivities } from "./estimate-hr-max";
+import { estimateHrMaxFromPeak } from "./estimate-hr-max";
 
 export type ThresholdMethod = "power" | "pace" | "hr" | "mixed";
 
@@ -19,60 +19,77 @@ export interface ThresholdSetup {
   isActive: boolean;
 }
 
-export async function getThresholdSetup(userId: string): Promise<ThresholdSetup> {
-  await ensureProductionSchema();
+function buildMethod(ftp: number | null, pace: number | null, hr: number | null): ThresholdMethod | null {
+  const hasPower = ftp !== null;
+  const hasPace = pace !== null;
+  const hasHr = hr !== null;
+  if (hasPower && hasPace) return "mixed";
+  if (hasPower) return "power";
+  if (hasPace) return "pace";
+  if (hasHr) return "hr";
+  return null;
+}
 
-  const [user, activityStats, hrActivities] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { ftpWatts: true, thresholdPaceSecPerKm: true, hrThresholdBpm: true, hrMaxBpm: true },
-    }),
-    prisma.activity.aggregate({
-      where: { userId },
-      _count: { _all: true },
-    }),
-    prisma.activity.findMany({
-      where: { userId },
-      select: { avgHr: true, durationSec: true, tss: true },
-    }),
-  ]);
-
-  const totalActivities = activityStats._count._all;
-  const activitiesWithHr = hrActivities.filter((a) => a.avgHr !== null).length;
-  const activitiesWithTss = hrActivities.filter((a) => a.tss !== null).length;
-  const tssCoverage = totalActivities > 0 ? activitiesWithTss / totalActivities : 0;
+export const getThresholdSetup = cache(async (userId: string): Promise<ThresholdSetup> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { ftpWatts: true, thresholdPaceSecPerKm: true, hrThresholdBpm: true, hrMaxBpm: true },
+  });
 
   const ftpWatts = user?.ftpWatts ?? null;
   const thresholdPaceSecPerKm = user?.thresholdPaceSecPerKm ?? null;
   const hrThresholdBpm = user?.hrThresholdBpm ?? null;
   const hrMaxBpm = user?.hrMaxBpm ?? null;
-  const suggestedHrMax = estimateHrMaxFromActivities(hrActivities);
+  const method = buildMethod(ftpWatts, thresholdPaceSecPerKm, hrThresholdBpm);
 
-  const hasPower = ftpWatts !== null;
-  const hasPace = thresholdPaceSecPerKm !== null;
-  const hasHr = hrThresholdBpm !== null;
+  if (hrMaxBpm) {
+    const [totalActivities, activitiesWithTss] = await Promise.all([
+      prisma.activity.count({ where: { userId } }),
+      prisma.activity.count({ where: { userId, tss: { not: null } } }),
+    ]);
+    const tssCoverage = totalActivities > 0 ? activitiesWithTss / totalActivities : 0;
 
-  let method: ThresholdMethod | null = null;
-  if (hasPower && hasPace) method = "mixed";
-  else if (hasPower) method = "power";
-  else if (hasPace) method = "pace";
-  else if (hasHr) method = "hr";
+    return {
+      ftpWatts,
+      thresholdPaceSecPerKm,
+      hrThresholdBpm,
+      hrMaxBpm,
+      suggestedHrMax: null,
+      totalActivities,
+      activitiesWithHr: 0,
+      activitiesWithTss,
+      tssCoverage,
+      method,
+      needsHrMaxSetup: false,
+      isActive: tssCoverage >= 0.5 && method !== null,
+    };
+  }
 
-  const isActive = tssCoverage >= 0.5 && (hasPower || hasPace || hasHr);
-  const needsHrMaxSetup = !hrMaxBpm && activitiesWithHr > 0;
+  const [totalActivities, activitiesWithHr, activitiesWithTss, peakHr] = await Promise.all([
+    prisma.activity.count({ where: { userId } }),
+    prisma.activity.count({ where: { userId, avgHr: { not: null } } }),
+    prisma.activity.count({ where: { userId, tss: { not: null } } }),
+    prisma.activity.findFirst({
+      where: { userId, avgHr: { not: null }, durationSec: { gte: 600 } },
+      orderBy: { avgHr: "desc" },
+      select: { avgHr: true },
+    }),
+  ]);
+
+  const tssCoverage = totalActivities > 0 ? activitiesWithTss / totalActivities : 0;
 
   return {
     ftpWatts,
     thresholdPaceSecPerKm,
     hrThresholdBpm,
     hrMaxBpm,
-    suggestedHrMax,
+    suggestedHrMax: peakHr?.avgHr ? estimateHrMaxFromPeak(peakHr.avgHr) : null,
     totalActivities,
     activitiesWithHr,
     activitiesWithTss,
     tssCoverage,
     method,
-    needsHrMaxSetup,
-    isActive,
+    needsHrMaxSetup: activitiesWithHr > 0,
+    isActive: tssCoverage >= 0.5 && method !== null,
   };
-}
+});

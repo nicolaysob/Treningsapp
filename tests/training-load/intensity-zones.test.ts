@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildWeeklyZoneDistribution } from "@/lib/training-load/intensity-zones";
-import { estimateHrMaxFromActivities } from "@/lib/training-load/estimate-hr-max";
+import { estimateHrMaxFromPeak } from "@/lib/training-load/estimate-hr-max";
 import {
   computeZoneSecondsFromHrStream,
   parseStravaHrStream,
@@ -49,13 +49,8 @@ describe("buildWeeklyZoneDistribution", () => {
   });
 });
 
-describe("estimateHrMaxFromActivities", () => {
-  it("estimates above highest average HR", () => {
-    expect(
-      estimateHrMaxFromActivities([
-        { avgHr: 165, durationSec: 3600 },
-        { avgHr: 172, durationSec: 2400 },
-      ]),
-    ).toBe(180);
+describe("estimateHrMaxFromPeak", () => {
+  it("estimates above peak average HR", () => {
+    expect(estimateHrMaxFromPeak(172)).toBe(180);
   });
 });
