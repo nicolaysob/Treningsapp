@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { auth, signOut } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import { syncUserFully } from "@/lib/sync-user";
-import { AppShell } from "@/components/layout/AppShell";
+import { syncUserFully, syncUserPeaks } from "@/lib/sync-user";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
@@ -25,28 +26,31 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
+  const { userId } = await requireUserId();
   const { error } = await searchParams;
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { name: true, image: true },
-  });
+  const [user, stravaAccount] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, image: true },
+    }),
+    prisma.account.findFirst({
+      where: { userId, provider: "strava" },
+      select: { id: true },
+    }),
+  ]);
 
   if (!user) redirect("/login");
-
-  const stravaAccount = await prisma.account.findFirst({
-    where: { userId: session.user.id, provider: "strava" },
-    select: { id: true },
-  });
 
   async function handleSync() {
     "use server";
     const session = await auth();
     if (!session?.user?.id) return;
-    await syncUserFully(session.user.id);
+    const userId = session.user.id;
+    await syncUserFully(userId);
+    after(async () => {
+      await syncUserPeaks(userId);
+    });
     redirect("/settings");
   }
 
@@ -66,7 +70,7 @@ export default async function SettingsPage({
   }
 
   return (
-    <AppShell userName={session.user.name}>
+    <>
       <PageHeader title="Innstillinger" />
 
       {error && STRAVA_ERROR_MESSAGES[error] && <Alert>{STRAVA_ERROR_MESSAGES[error]}</Alert>}
@@ -107,7 +111,7 @@ export default async function SettingsPage({
 
                 <SettingsDivider />
 
-                <SettingsRow title="Synk aktiviteter" description="Automatisk hvert 20. minutt">
+                <SettingsRow title="Synk aktiviteter" description="Automatisk hver time">
                   <form action={handleSync}>
                     <Button type="submit" size="sm">
                       Synk nå
@@ -149,6 +153,6 @@ export default async function SettingsPage({
           </Button>
         </form>
       </div>
-    </AppShell>
+    </>
   );
 }

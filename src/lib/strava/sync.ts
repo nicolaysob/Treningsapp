@@ -33,8 +33,7 @@ function mapSport(sportType: string): Sport {
 }
 
 export interface SyncResult {
-  created: number;
-  updated: number;
+  processed: number;
   errors: number;
 }
 
@@ -58,7 +57,7 @@ export async function syncUserActivities(userId: string): Promise<SyncResult> {
     ? Math.floor(latest.date.getTime() / 1000) - 60 * 60 * 24
     : 0;
 
-  const result: SyncResult = { created: 0, updated: 0, errors: 0 };
+  const result: SyncResult = { processed: 0, errors: 0 };
   let page = 1;
 
   while (true) {
@@ -70,11 +69,6 @@ export async function syncUserActivities(userId: string): Promise<SyncResult> {
 
     for (const a of activities) {
       try {
-        const existing = await prisma.activity.findUnique({
-          where: { stravaActivityId: BigInt(a.id) },
-          select: { id: true },
-        });
-
         const distanceM = a.distance || null;
         const avgPaceSecPerKm =
           distanceM && distanceM > 0
@@ -103,8 +97,7 @@ export async function syncUserActivities(userId: string): Promise<SyncResult> {
           update: fields,
         });
 
-        if (existing) result.updated++;
-        else result.created++;
+        result.processed++;
       } catch (err) {
         console.error("Failed to upsert Strava activity", a.id, err);
         result.errors++;

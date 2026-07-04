@@ -1,24 +1,24 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
 import { recomputeDailyLoad } from "@/lib/training-load/batch";
+import { revalidateUserCache, invalidateUserCache } from "@/lib/cache/user-data";
 import {
   formatSecondsToPace,
   parseOptionalInt,
   parsePaceToSeconds,
 } from "@/lib/settings-fields";
-import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 
 export default async function TrainingSettingsPage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  const { userId } = await requireUserId();
 
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: userId },
     select: {
       ftpWatts: true,
       thresholdPaceSecPerKm: true,
@@ -48,6 +48,8 @@ export default async function TrainingSettingsPage() {
       },
     });
 
+    revalidateUserCache(session.user.id);
+    invalidateUserCache(session.user.id);
     redirect("/settings/training");
   }
 
@@ -66,6 +68,8 @@ export default async function TrainingSettingsPage() {
     });
 
     await recomputeDailyLoad(session.user.id);
+    revalidateUserCache(session.user.id);
+    invalidateUserCache(session.user.id);
     redirect("/settings/training");
   }
 
@@ -74,7 +78,7 @@ export default async function TrainingSettingsPage() {
     : "";
 
   return (
-    <AppShell userName={session.user.name}>
+    <>
       <PageHeader
         title="Trening"
         subtitle="Mål og terskler for TSS-beregning"
@@ -147,6 +151,6 @@ export default async function TrainingSettingsPage() {
           </form>
         </Card>
       </div>
-    </AppShell>
+    </>
   );
 }

@@ -1,9 +1,7 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
 import { startOfMonth, getMonthGridDays, toDateKey } from "@/lib/date";
 import { MonthView, type MonthDayData } from "@/components/calendar/MonthView";
-import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { WeekNav } from "@/components/ui/SegmentedNav";
 import { Card } from "@/components/ui/Card";
@@ -28,9 +26,7 @@ export default async function CalendarPage({
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-  const userId = session.user.id;
+  const { userId } = await requireUserId();
 
   const { month: monthParam } = await searchParams;
   const monthStart = monthParam ? startOfMonth(new Date(monthParam)) : startOfMonth(new Date());
@@ -44,10 +40,12 @@ export default async function CalendarPage({
     prisma.activity.findMany({
       where: { userId, date: { gte: gridStart, lt: gridEnd } },
       orderBy: { date: "asc" },
+      select: { id: true, date: true, sport: true, durationSec: true },
     }),
     prisma.plannedWorkout.findMany({
       where: { userId, date: { gte: gridStart, lt: gridEnd } },
       orderBy: { date: "asc" },
+      select: { id: true, date: true, sport: true, description: true, durationMin: true },
     }),
   ]);
 
@@ -70,7 +68,7 @@ export default async function CalendarPage({
   );
 
   return (
-    <AppShell userName={session.user.name}>
+    <>
       <PageHeader
         title="Kalender"
         subtitle="Hold over en dag og trykk + for å planlegge"
@@ -87,6 +85,6 @@ export default async function CalendarPage({
           <MonthView days={days} todayKey={toDateKey(new Date())} />
         </Card>
       </div>
-    </AppShell>
+    </>
   );
 }

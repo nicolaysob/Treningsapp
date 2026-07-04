@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import { auth } from "@/lib/auth";
-import { syncUserActivities } from "@/lib/strava/sync";
-import { recomputeDailyLoad } from "@/lib/training-load/batch";
-import { processNewActivityPeaks } from "@/lib/peak-efforts/process";
+import { syncUserFully, syncUserPeaks } from "@/lib/sync-user";
 
 export async function POST() {
   const session = await auth();
@@ -11,10 +10,12 @@ export async function POST() {
   }
 
   try {
-    const result = await syncUserActivities(session.user.id);
-    await recomputeDailyLoad(session.user.id);
-    const peaks = await processNewActivityPeaks(session.user.id);
-    return NextResponse.json({ ...result, newRecords: peaks.newRecords });
+    const userId = session.user.id;
+    await syncUserFully(userId);
+    after(async () => {
+      await syncUserPeaks(userId);
+    });
+    return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Sync failed", err);
     return NextResponse.json({ error: "Sync failed" }, { status: 500 });

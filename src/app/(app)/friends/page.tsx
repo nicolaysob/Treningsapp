@@ -1,13 +1,11 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
 import {
   sendFriendRequest,
   acceptFriendRequest,
   declineFriendRequest,
   removeFriend,
-} from "@/app/friends/actions";
-import { AppShell } from "@/components/layout/AppShell";
+} from "@/app/(app)/friends/actions";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
@@ -25,9 +23,7 @@ export default async function FriendsPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-  const userId = session.user.id;
+  const { userId } = await requireUserId();
 
   const { error } = await searchParams;
 
@@ -58,7 +54,7 @@ export default async function FriendsPage({
   }));
 
   return (
-    <AppShell userName={session.user.name}>
+    <>
       <PageHeader title="Venner" subtitle="Legg til venner for å konkurrere på leaderboard" />
 
       {error && ERROR_MESSAGES[error] && <Alert>{ERROR_MESSAGES[error]}</Alert>}
@@ -168,6 +164,6 @@ export default async function FriendsPage({
           )}
         </section>
       </div>
-    </AppShell>
+    </>
   );
 }

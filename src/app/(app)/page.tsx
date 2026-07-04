@@ -1,13 +1,12 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
+import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import { deletePlannedWorkout } from "@/app/calendar/actions";
+import { deletePlannedWorkout } from "@/app/(app)/calendar/actions";
 import { startOfIsoWeek } from "@/lib/date";
-import { PmcChart } from "@/components/pmc/PmcChart";
+import { getCachedDailyLoadSeries, getCachedLatestLoad } from "@/lib/cache/user-data";
+import { PmcChartLazy } from "@/components/pmc/PmcChartLazy";
 import { TsbGauge } from "@/components/pmc/TsbGauge";
 import { TrainingInsightCard } from "@/components/pmc/TrainingInsightCard";
-import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { BentoStat } from "@/components/ui/BentoStat";
 import { SegmentedNav } from "@/components/ui/SegmentedNav";
@@ -51,10 +50,7 @@ export default async function Home({
 }: {
   searchParams: Promise<{ days?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/login");
-
-  const userId = session.user.id;
+  const { userId, userName } = await requireUserId();
   const { days: daysParam } = await searchParams;
   const days = PERIOD_OPTIONS.includes(Number(daysParam)) ? Number(daysParam) : DEFAULT_DAYS;
 
@@ -65,36 +61,18 @@ export default async function Home({
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
 
-  const [dailyLoad, latestLoad, upcomingPlanned] = await Promise.all([
-    prisma.dailyLoad.findMany({
-      where: { userId, date: { gte: since } },
-      orderBy: { date: "asc" },
-      select: { date: true, ctl: true, atl: true, tsb: true },
-    }),
-    prisma.dailyLoad.findFirst({
-      where: { userId },
-      orderBy: { date: "desc" },
-      select: { ctl: true, atl: true, tsb: true },
-    }),
+  const weekStart = startOfIsoWeek(new Date());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+
+  const [dailyLoad, latestLoad, upcomingPlanned, user, weekTssResult] = await Promise.all([
+    getCachedDailyLoadSeries(userId, since),
+    getCachedLatestLoad(userId),
     prisma.plannedWorkout.findMany({
       where: { userId, date: { gte: todayStart } },
       orderBy: { date: "asc" },
       take: 7,
     }),
-  ]);
-
-  const chartData = dailyLoad.map((row) => ({
-    date: row.date.toISOString(),
-    ctl: row.ctl,
-    atl: row.atl,
-    tsb: row.tsb,
-  }));
-
-  const weekStart = startOfIsoWeek(new Date());
-  const weekEnd = new Date(weekStart);
-  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-
-  const [user, weekTssResult] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { weeklyTssGoal: true, raceName: true, raceDate: true },
@@ -105,6 +83,13 @@ export default async function Home({
     }),
   ]);
 
+  const chartData = dailyLoad.map((row) => ({
+    date: row.date.toISOString(),
+    ctl: row.ctl,
+    atl: row.atl,
+    tsb: row.tsb,
+  }));
+
   const weekTss = weekTssResult._sum.tss ?? 0;
 
   const now = new Date();
@@ -112,11 +97,10 @@ export default async function Home({
     ? Math.ceil((user.raceDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
     : null;
 
-  const firstName = session.user.name?.split(" ")[0] ?? "deg";
+  const firstName = userName?.split(" ")[0] ?? "deg";
 
   return (
-    <AppShell userName={session.user.name}>
-      <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
         <div className="hero-card animate-in flex items-center justify-between gap-4 p-5 sm:p-6">
           <div className="relative z-10 min-w-0">
             <p className="section-label text-orange-400/80">{getWeekdayGreeting()}</p>
@@ -209,7 +193,7 @@ export default async function Home({
               </Link>
             </div>
           ) : (
-            <PmcChart data={chartData} />
+            <PmcChartLazy data={chartData} />
           )}
         </Card>
 
@@ -279,6 +263,5 @@ export default async function Home({
           )}
         </Card>
       </div>
-    </AppShell>
   );
 }

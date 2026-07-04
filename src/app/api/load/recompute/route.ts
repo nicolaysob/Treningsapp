@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { recomputeDailyLoad } from "@/lib/training-load/batch";
 
+import { revalidateUserCache } from "@/lib/cache/user-data";
+
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id) {
@@ -9,5 +11,6 @@ export async function POST() {
   }
 
   await recomputeDailyLoad(session.user.id);
+  revalidateUserCache(session.user.id);
   return NextResponse.json({ ok: true });
 }

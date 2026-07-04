@@ -81,6 +81,8 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
       avgWatts: true,
       avgHr: true,
       avgPaceSecPerKm: true,
+      tss: true,
+      tssMethod: true,
     },
     orderBy: { date: "asc" },
   });
@@ -93,6 +95,8 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
   const computed = activities.map((activity) => ({
     id: activity.id,
     date: activity.date,
+    currentTss: activity.tss,
+    currentMethod: activity.tssMethod,
     ...computeActivityTss(activity, user),
   }));
 
@@ -116,12 +120,17 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
       for (let i = 0; i < computed.length; i += ACTIVITY_UPDATE_CHUNK) {
         const chunk = computed.slice(i, i + ACTIVITY_UPDATE_CHUNK);
         await Promise.all(
-          chunk.map(({ id, tss, method }) =>
-            tx.activity.update({
-              where: { id },
-              data: { tss, tssMethod: method },
-            }),
-          ),
+          chunk
+            .filter(
+              ({ tss, method, currentTss, currentMethod }) =>
+                tss !== currentTss || method !== currentMethod,
+            )
+            .map(({ id, tss, method }) =>
+              tx.activity.update({
+                where: { id },
+                data: { tss, tssMethod: method },
+              }),
+            ),
         );
       }
 

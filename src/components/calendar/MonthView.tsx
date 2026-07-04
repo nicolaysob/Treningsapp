@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { Activity, PlannedWorkout } from "@prisma/client";
-import { createPlannedWorkout, deletePlannedWorkout } from "@/app/calendar/actions";
+import type { PlannedWorkout } from "@prisma/client";
+import { createPlannedWorkout, deletePlannedWorkout } from "@/app/(app)/calendar/actions";
 import { PlannedWorkoutForm } from "./PlannedWorkoutForm";
+
+export type CalendarActivity = {
+  id: string;
+  date: Date;
+  sport: PlannedWorkout["sport"];
+  durationSec: number;
+};
 
 const WEEKDAY_LABELS = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
 const SPORT_LABELS: Record<string, string> = {
@@ -22,20 +29,31 @@ const SPORT_DOT_CLASSES: Record<string, string> = {
   OTHER: "cal-dot--other",
 };
 
+export type CalendarPlannedWorkout = {
+  id: string;
+  date: Date;
+  sport: CalendarActivity["sport"];
+  description: string;
+  durationMin: number;
+};
+
 export interface MonthDayData {
   date: Date;
   key: string;
   isCurrentMonth: boolean;
-  activities: Activity[];
-  planned: PlannedWorkout[];
+  activities: CalendarActivity[];
+  planned: CalendarPlannedWorkout[];
 }
 
 interface MatchedDay {
-  activityRows: { activity: Activity; matchedPlanned: PlannedWorkout | null }[];
-  unmatchedPlanned: PlannedWorkout[];
+  activityRows: { activity: CalendarActivity; matchedPlanned: CalendarPlannedWorkout | null }[];
+  unmatchedPlanned: CalendarPlannedWorkout[];
 }
 
-function matchPlannedToActivities(activities: Activity[], planned: PlannedWorkout[]): MatchedDay {
+function matchPlannedToActivities(
+  activities: CalendarActivity[],
+  planned: CalendarPlannedWorkout[],
+): MatchedDay {
   const remainingPlanned = [...planned];
 
   const activityRows = activities.map((activity) => {
