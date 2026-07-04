@@ -113,8 +113,8 @@ export function AppShell({
         {children}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-        <nav className="nav-island mx-auto max-w-lg">
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <nav className="nav-island pointer-events-auto mx-auto max-w-lg">
           <div className="flex items-stretch justify-around px-0.5 py-1.5">
             {NAV_ITEMS.map((item) => {
               const active = isActive(pathname, item.href);
@@ -122,7 +122,8 @@ export function AppShell({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex flex-1 flex-col items-center gap-0.5 rounded-2xl px-1 py-2 transition-all duration-200 ${
+                  prefetch={false}
+                  className={`flex min-h-11 min-w-[2.75rem] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 transition-all duration-200 select-none ${
                     active ? "nav-item-active text-[#ff6b2b]" : "text-zinc-600 hover:text-zinc-400"
                   }`}
                 >

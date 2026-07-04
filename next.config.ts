@@ -14,7 +14,8 @@ const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
-  cacheOnFrontEndNav: true,
+  // Caching navigations breaks dynamic auth pages and can freeze tab switches in PWA.
+  cacheOnFrontEndNav: false,
 });
 
 export default withPWA(nextConfig);
