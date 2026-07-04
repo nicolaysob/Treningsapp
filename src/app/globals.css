@@ -567,6 +567,52 @@ body.app-locked {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
+/* Account settings */
+.account-avatar-btn {
+  position: relative;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.account-avatar-btn__img {
+  height: 3.5rem;
+  width: 3.5rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.account-avatar-btn__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.account-avatar-btn:hover .account-avatar-btn__overlay,
+.account-avatar-btn:focus-visible .account-avatar-btn__overlay {
+  opacity: 1;
+}
+
+.strava-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #34d399;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+  flex-shrink: 0;
+}
+
 .glass-header {
   background: transparent;
 }

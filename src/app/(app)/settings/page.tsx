@@ -1,18 +1,16 @@
 import { redirect } from "next/navigation";
-import { after } from "next/server";
-import { auth, signOut } from "@/lib/auth";
+import { signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
-import { syncUserFully } from "@/lib/sync-user";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Alert } from "@/components/ui/Alert";
-import { Button, ButtonLink } from "@/components/ui/Button";
-import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { AccountProfileForm } from "@/components/settings/AccountProfileForm";
+import { StravaAccountRow } from "@/components/settings/StravaAccountRow";
 import {
   SettingsGroup,
-  SettingsRow,
   SettingsDivider,
 } from "@/components/settings/SettingsGroup";
 import { SettingsLink } from "@/components/settings/SettingsLink";
@@ -26,18 +24,25 @@ const SYNC_MESSAGES: Record<string, string> = {
   started: "Synkronisering startet. Aktiviteter oppdateres i bakgrunnen.",
 };
 
+const PROFILE_MESSAGES: Record<string, string> = {
+  saved: "Konto oppdatert.",
+  invalid: "Navn må fylles ut.",
+  invalid_username: "Brukernavn må være 3–30 tegn (a–z, 0–9, _).",
+  username_taken: "Brukernavnet er allerede i bruk.",
+};
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; sync?: string }>;
+  searchParams: Promise<{ error?: string; sync?: string; profile?: string }>;
 }) {
   const { userId } = await requireUserId();
-  const { error, sync } = await searchParams;
+  const { error, sync, profile } = await searchParams;
 
   const [user, stravaAccount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, image: true },
+      select: { name: true, username: true, image: true },
     }),
     prisma.account.findFirst({
       where: { userId, provider: "strava" },
@@ -47,33 +52,6 @@ export default async function SettingsPage({
 
   if (!user) redirect("/login");
 
-  async function handleSync() {
-    "use server";
-    const session = await auth();
-    if (!session?.user?.id) return;
-    const userId = session.user.id;
-
-    after(async () => {
-      try {
-        await syncUserFully(userId);
-      } catch (err) {
-        console.error("Background Strava sync failed", err);
-      }
-    });
-
-    redirect("/settings?sync=started");
-  }
-
-  async function handleDisconnectStrava() {
-    "use server";
-    const session = await auth();
-    if (!session?.user?.id) return;
-    await prisma.account.deleteMany({
-      where: { userId: session.user.id, provider: "strava" },
-    });
-    redirect("/settings");
-  }
-
   async function handleSignOut() {
     "use server";
     await signOut({ redirectTo: "/login" });
@@ -81,77 +59,32 @@ export default async function SettingsPage({
 
   return (
     <>
-      <PageHeader title="Innstillinger" />
+      <PageHeader title="Mer" subtitle="Konto og app-innstillinger" />
 
       {error && STRAVA_ERROR_MESSAGES[error] && <Alert>{STRAVA_ERROR_MESSAGES[error]}</Alert>}
       {sync && SYNC_MESSAGES[sync] && <Alert>{SYNC_MESSAGES[sync]}</Alert>}
+      {profile && PROFILE_MESSAGES[profile] && <Alert>{PROFILE_MESSAGES[profile]}</Alert>}
 
       <div className="flex flex-col gap-6">
         <SettingsGroup title="Konto">
-          <Card className="flex flex-col gap-1">
+          <Card className="flex flex-col gap-4">
+            <AccountProfileForm
+              name={user.name}
+              username={user.username}
+              image={user.image}
+            />
+
+            <SettingsDivider />
+
+            <StravaAccountRow connected={!!stravaAccount} />
+
+            <SettingsDivider />
+
             <SettingsLink
               href="/settings/training"
               title="Trening"
               description="Mål, terskler og TSS"
             />
-          </Card>
-        </SettingsGroup>
-
-        <SettingsGroup title="Strava">
-          <Card>
-            {stravaAccount ? (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3">
-                  {user.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- external Strava avatar URL
-                    <img
-                      src={user.image}
-                      alt=""
-                      className="h-10 w-10 rounded-full object-cover ring-2 ring-emerald-500/30"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-bold text-emerald-400">
-                      S
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-semibold text-zinc-100">{user.name}</p>
-                    <p className="text-xs text-emerald-500">Tilkoblet</p>
-                  </div>
-                </div>
-
-                <SettingsDivider />
-
-                <SettingsRow
-                  title="Synk aktiviteter"
-                  description="Dra ned på en side, eller trykk her. Automatisk én gang daglig."
-                >
-                  <form action={handleSync}>
-                    <SubmitButton size="sm" pendingLabel="Synker…">
-                      Synk nå
-                    </SubmitButton>
-                  </form>
-                </SettingsRow>
-
-                <form action={handleDisconnectStrava} className="pt-1">
-                  <button
-                    type="submit"
-                    className="text-sm text-zinc-500 transition-colors hover:text-red-400"
-                  >
-                    Koble fra Strava
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <SettingsRow
-                title="Ikke tilkoblet"
-                description="Koble til for å hente aktiviteter automatisk"
-              >
-                <ButtonLink href="/api/strava/connect" size="sm">
-                  Koble til
-                </ButtonLink>
-              </SettingsRow>
-            )}
           </Card>
         </SettingsGroup>
 

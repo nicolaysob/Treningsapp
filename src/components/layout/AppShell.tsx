@@ -19,12 +19,14 @@ function getInitials(name: string | null | undefined): string {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/session")
       .then((res) => res.json())
-      .then((data: { user?: { name?: string | null } }) => {
+      .then((data: { user?: { name?: string | null; image?: string | null } }) => {
         setUserName(data.user?.name ?? null);
+        setUserImage(data.user?.image ?? null);
       })
       .catch(() => {});
   }, []);
@@ -43,9 +45,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           {userName && (
             <Link
               href="/settings"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/6 text-xs font-bold text-zinc-300 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white/6 text-xs font-bold text-zinc-300 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
             >
-              {getInitials(userName)}
+              {userImage ? (
+                // eslint-disable-next-line @next/next/no-img-element -- session avatar may be data URL
+                <img src={userImage} alt="" className="h-full w-full object-cover" />
+              ) : (
+                getInitials(userName)
+              )}
             </Link>
           )}
         </div>
