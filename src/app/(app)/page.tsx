@@ -2,8 +2,7 @@ import Link from "next/link";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
 import { deletePlannedWorkout } from "@/app/(app)/calendar/actions";
-import { startOfIsoWeek } from "@/lib/date";
-import { getCachedDailyLoadSeries, getCachedLatestLoad } from "@/lib/cache/user-data";
+import { startOfIsoWeek, formatDateNb } from "@/lib/date";
 import { PmcChartLazy } from "@/components/pmc/PmcChartLazy";
 import { TsbGauge } from "@/components/pmc/TsbGauge";
 import { TrainingInsightCard } from "@/components/pmc/TrainingInsightCard";
@@ -66,8 +65,16 @@ export default async function Home({
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
 
   const [dailyLoad, latestLoad, upcomingPlanned, user, weekTssResult] = await Promise.all([
-    getCachedDailyLoadSeries(userId, since),
-    getCachedLatestLoad(userId),
+    prisma.dailyLoad.findMany({
+      where: { userId, date: { gte: since } },
+      orderBy: { date: "asc" },
+      select: { date: true, ctl: true, atl: true, tsb: true },
+    }),
+    prisma.dailyLoad.findFirst({
+      where: { userId },
+      orderBy: { date: "desc" },
+      select: { ctl: true, atl: true, tsb: true },
+    }),
     prisma.plannedWorkout.findMany({
       where: { userId, date: { gte: todayStart } },
       orderBy: { date: "asc" },
@@ -84,7 +91,7 @@ export default async function Home({
   ]);
 
   const chartData = dailyLoad.map((row) => ({
-    date: row.date.toISOString(),
+    date: row.date instanceof Date ? row.date.toISOString() : String(row.date),
     ctl: row.ctl,
     atl: row.atl,
     tsb: row.tsb,
@@ -233,7 +240,7 @@ export default async function Home({
                         {SPORT_LABELS[p.sport] ?? p.sport}
                       </p>
                       <p className="truncate text-xs text-zinc-500">
-                        {p.date.toLocaleDateString("nb-NO", {
+                        {formatDateNb(p.date, {
                           weekday: "short",
                           day: "numeric",
                           month: "short",

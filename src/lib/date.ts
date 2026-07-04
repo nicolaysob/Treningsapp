@@ -10,6 +10,23 @@ export function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+/** Safe for cached/JSON data where dates may arrive as strings. */
+export function toDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value);
+}
+
+export function formatDateNb(
+  value: Date | string,
+  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" },
+): string {
+  const date = toDate(value);
+  try {
+    return date.toLocaleDateString("nb-NO", options);
+  } catch {
+    return date.toLocaleDateString(undefined, options);
+  }
+}
+
 export function startOfMonth(date: Date): Date {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
 }

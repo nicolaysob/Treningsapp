@@ -1,6 +1,7 @@
 import { requireUserId } from "@/lib/auth-session";
-import { getCachedWeeklyLeaderboard } from "@/lib/cache/user-data";
-import { startOfIsoWeek, toDateKey } from "@/lib/date";
+import { getFriendIds } from "@/lib/friends";
+import { getWeeklyLeaderboard } from "@/lib/leaderboard/weekly";
+import { startOfIsoWeek, toDateKey, formatDateNb } from "@/lib/date";
 import { LeaderboardTable } from "@/components/leaderboard/LeaderboardTable";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { WeekNav } from "@/components/ui/SegmentedNav";
@@ -15,7 +16,7 @@ export default async function LeaderboardPage({
   const { weekStart: weekStartParam } = await searchParams;
   const weekStart = weekStartParam ? new Date(weekStartParam) : startOfIsoWeek(new Date());
 
-  const rows = await getCachedWeeklyLeaderboard(userId, weekStart);
+  const rows = await getWeeklyLeaderboard(weekStart, [userId, ...(await getFriendIds(userId))]);
 
   const prevWeek = new Date(weekStart);
   prevWeek.setUTCDate(prevWeek.getUTCDate() - 7);
@@ -32,7 +33,7 @@ export default async function LeaderboardPage({
         <WeekNav
           prevHref={`/leaderboard?weekStart=${toDateKey(prevWeek)}`}
           nextHref={`/leaderboard?weekStart=${toDateKey(nextWeek)}`}
-          label={`${weekStart.toLocaleDateString("nb-NO")} – ${weekEnd.toLocaleDateString("nb-NO")}`}
+          label={`${formatDateNb(weekStart)} – ${formatDateNb(weekEnd)}`}
         />
 
         <LeaderboardTable rows={rows} currentUserId={userId} />
