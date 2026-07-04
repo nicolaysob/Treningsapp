@@ -77,7 +77,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: appShellScript }} />
       </head>
-      <body className="min-h-dvh h-full antialiased">
+      <body className="h-full min-h-dvh antialiased" style={{ minHeight: "-webkit-fill-available" }}>
         <ThemeProvider>
           <PwaRefresh />
           <AppChrome>{children}</AppChrome>

@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useTransition, type MouseEvent } from "react";
+import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   {
@@ -69,18 +68,6 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [, startTransition] = useTransition();
-
-  function handleNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
-    if (pathname === href || (href !== "/" && pathname.startsWith(href))) {
-      return;
-    }
-    event.preventDefault();
-    startTransition(() => {
-      router.push(href);
-    });
-  }
 
   return (
     <nav className="bottom-nav" aria-label="Hovedmeny">
@@ -94,7 +81,6 @@ export function BottomNav() {
                 href={item.href}
                 prefetch={false}
                 scroll={false}
-                onClick={(event) => handleNavClick(event, item.href)}
                 className={`bottom-nav__item ${active ? "nav-item-active text-[#ff6b2b]" : "text-zinc-600"}`}
               >
                 {item.icon}
