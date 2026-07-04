@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { auth } from "@/lib/auth";
-import { syncUserFully, continueBestTimesImport } from "@/lib/sync-user";
-import { resetBestTimesProcessing, processNewActivityPeaks } from "@/lib/peak-efforts/process";
-import { revalidatePath } from "next/cache";
+import { syncUserActivitiesQuick, importBestTimesInBackground } from "@/lib/sync-user";
 
 export async function POST() {
   const session = await auth();
@@ -13,13 +11,16 @@ export async function POST() {
 
   try {
     const userId = session.user.id;
-    await syncUserFully(userId, { full: true });
-    await resetBestTimesProcessing(userId);
-    await processNewActivityPeaks(userId);
-    revalidatePath("/peak");
+    await syncUserActivitiesQuick(userId);
+
     after(async () => {
-      await continueBestTimesImport(userId);
+      try {
+        await importBestTimesInBackground(userId);
+      } catch (err) {
+        console.error("Background best-times import failed", err);
+      }
     });
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Sync failed", err);

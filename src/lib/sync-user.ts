@@ -3,7 +3,6 @@ import { syncUserActivities } from "@/lib/strava/sync";
 import { recomputeDailyLoad } from "@/lib/training-load/batch";
 import {
   processAllActivityPeaks,
-  processNewActivityPeaks,
   resetBestTimesProcessing,
 } from "@/lib/peak-efforts/process";
 import { revalidateUserCache } from "@/lib/cache/user-data";
@@ -15,16 +14,16 @@ export async function syncUserFully(userId: string, options?: { full?: boolean }
   revalidateUserCache(userId);
 }
 
-/** Manual sync: full history, reset + import Strava best efforts. */
-export async function syncUserFullyWithBestTimes(userId: string) {
-  await syncUserFully(userId, { full: true });
-  await resetBestTimesProcessing(userId);
-  await processNewActivityPeaks(userId);
+/** Fast manual sync — activities only. Best times import runs separately. */
+export async function syncUserActivitiesQuick(userId: string) {
+  await syncUserFully(userId);
   revalidatePath("/peak");
+  revalidatePath("/");
 }
 
-/** Continue importing best efforts in background after manual sync. */
-export async function continueBestTimesImport(userId: string) {
+/** Background: reimport Strava best_efforts (slow, many API calls). */
+export async function importBestTimesInBackground(userId: string) {
+  await resetBestTimesProcessing(userId);
   await processAllActivityPeaks(userId);
   revalidatePath("/peak");
 }
