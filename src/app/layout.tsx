@@ -71,10 +71,10 @@ const appShellScript = `
       document.documentElement.classList.add('standalone-app');
       var probe = document.createElement('div');
       probe.style.cssText =
-        'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);';
-      document.documentElement.appendChild(probe);
+        'position:fixed;bottom:0;left:0;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);';
+      document.body.appendChild(probe);
       var measured = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-      document.documentElement.removeChild(probe);
+      document.body.removeChild(probe);
       document.documentElement.style.setProperty(
         '--pwa-safe-bottom',
         (measured > 0 ? measured : 34) + 'px'
