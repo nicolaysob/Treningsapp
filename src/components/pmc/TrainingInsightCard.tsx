@@ -46,7 +46,7 @@ export function TrainingInsightCard({ context }: { context: TrainingInsightConte
   const style = TONE_STYLES[insight.tone];
 
   return (
-    <div className={`insight-card flex flex-col gap-3 rounded-2xl border p-4 ${style.border} ${style.bg}`}>
+    <div className={`insight-card insight-card--${insight.tone} flex flex-col gap-3 rounded-2xl border p-4 ${style.border}`}>
       <div className="flex gap-3.5">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black/30 text-base font-bold ${style.headline}`}

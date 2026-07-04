@@ -57,7 +57,9 @@ export function CoachReportView({ report }: { report: CoachReport }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className={`coach-hero insight-card flex flex-col gap-3 rounded-2xl border p-4 sm:p-5 ${style.border} ${style.bg}`}>
+      <div
+        className={`coach-hero insight-card insight-card--${report.summary.tone} flex flex-col gap-3 rounded-2xl border p-4 sm:p-5 ${style.border}`}
+      >
         <div className="flex gap-3.5">
           <div
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-black/30 text-lg font-bold ${style.headline}`}
