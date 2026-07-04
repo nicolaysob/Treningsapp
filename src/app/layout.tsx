@@ -54,16 +54,6 @@ const themeScript = `
 const appShellScript = `
 (function() {
   try {
-    function setHeight() {
-      var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      document.documentElement.style.setProperty('--app-height', h + 'px');
-    }
-    setHeight();
-    window.addEventListener('resize', setHeight);
-    window.addEventListener('orientationchange', setHeight);
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setHeight);
-    }
     var path = location.pathname;
     if (path.indexOf('/login') === 0 || path.indexOf('/signup') === 0) return;
     document.documentElement.classList.add('app-locked');

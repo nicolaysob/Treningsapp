@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/AppLogo";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { useAppViewport } from "@/components/layout/useAppViewport";
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return "?";
@@ -19,7 +18,6 @@ function getInitials(name: string | null | undefined): string {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
-  useAppViewport();
 
   useEffect(() => {
     fetch("/api/auth/session")
