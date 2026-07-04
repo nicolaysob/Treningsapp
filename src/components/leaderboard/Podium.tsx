@@ -53,14 +53,14 @@ export function Podium({
                     : "bg-white/8 text-zinc-300"
                 }`}
               >
-                {row.userName[0]?.toUpperCase() ?? "?"}
+                {row.userName?.[0]?.toUpperCase() ?? "?"}
               </div>
               <p
                 className={`max-w-full truncate text-center text-xs font-semibold ${
                   isMe ? "text-orange-300" : "text-zinc-300"
                 }`}
               >
-                {row.userName.split(" ")[0]}
+                {row.userName?.split(" ")[0] ?? "Ukjent"}
               </p>
               <p className="font-mono text-[11px] font-bold text-zinc-500">{fmt(row)}</p>
             </div>

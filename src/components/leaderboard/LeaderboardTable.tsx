@@ -84,11 +84,11 @@ export function LeaderboardTable({
                     : "bg-white/6 text-zinc-400"
                 }`}
               >
-                {row.userName[0]?.toUpperCase() ?? "?"}
+                {row.userName?.[0]?.toUpperCase() ?? "?"}
               </div>
               <div className="min-w-0 flex-1">
                 <p className={`truncate font-semibold ${isMe ? "text-[#ff8f4c]" : "text-zinc-200"}`}>
-                  {row.userName}
+                  {row.userName ?? "Ukjent"}
                 </p>
               </div>
               <p className="shrink-0 font-mono text-sm font-bold tabular-nums text-zinc-300">
