@@ -21,13 +21,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const shellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const shell = shellRef.current;
-    if (!shell) return;
-
     function syncHeight() {
+      const el = shellRef.current;
+      if (!el) return;
       const height = window.visualViewport?.height ?? window.innerHeight;
-      shell.style.height = `${height}px`;
-      shell.style.maxHeight = `${height}px`;
+      el.style.height = `${height}px`;
+      el.style.maxHeight = `${height}px`;
     }
 
     syncHeight();
