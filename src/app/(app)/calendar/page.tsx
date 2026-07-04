@@ -71,7 +71,7 @@ export default async function CalendarPage({
     <>
       <PageHeader
         title="Kalender"
-        subtitle="Hold over en dag og trykk + for å planlegge"
+        subtitle="Trykk på en dag for å se økter og planlegge"
       />
 
       <div className="flex flex-col gap-4">

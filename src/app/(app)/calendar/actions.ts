@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import type { Sport } from "@prisma/client";
@@ -24,6 +25,8 @@ export async function createPlannedWorkout(formData: FormData) {
       durationMin,
     },
   });
+
+  revalidatePath("/calendar");
 }
 
 export async function deletePlannedWorkout(formData: FormData) {
@@ -36,4 +39,6 @@ export async function deletePlannedWorkout(formData: FormData) {
   await prisma.plannedWorkout.deleteMany({
     where: { id, userId: session.user.id },
   });
+
+  revalidatePath("/calendar");
 }

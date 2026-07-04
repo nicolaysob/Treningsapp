@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import type { PlannedWorkout } from "@prisma/client";
-import { createPlannedWorkout, deletePlannedWorkout } from "@/app/(app)/calendar/actions";
-import { PlannedWorkoutForm } from "./PlannedWorkoutForm";
+import { DayDetailSheet } from "@/components/calendar/DayDetailSheet";
 
 export type CalendarActivity = {
   id: string;
@@ -21,12 +20,12 @@ const SPORT_LABELS: Record<string, string> = {
   OTHER: "Annet",
 };
 
-const SPORT_DOT_CLASSES: Record<string, string> = {
-  RIDE: "cal-dot--ride",
-  RUN: "cal-dot--run",
-  SWIM: "cal-dot--swim",
-  STRENGTH: "cal-dot--strength",
-  OTHER: "cal-dot--other",
+const SPORT_ICONS: Record<string, string> = {
+  RIDE: "🚴",
+  RUN: "🏃",
+  SWIM: "🏊",
+  STRENGTH: "💪",
+  OTHER: "⚡",
 };
 
 export type CalendarPlannedWorkout = {
@@ -45,24 +44,40 @@ export interface MonthDayData {
   planned: CalendarPlannedWorkout[];
 }
 
-interface MatchedDay {
-  activityRows: { activity: CalendarActivity; matchedPlanned: CalendarPlannedWorkout | null }[];
-  unmatchedPlanned: CalendarPlannedWorkout[];
-}
+type SessionPreview = {
+  key: string;
+  icon: string;
+  label: string;
+  variant: "done" | "planned" | "activity";
+};
 
-function matchPlannedToActivities(
-  activities: CalendarActivity[],
-  planned: CalendarPlannedWorkout[],
-): MatchedDay {
-  const remainingPlanned = [...planned];
+function buildSessionPreviews(day: MonthDayData): SessionPreview[] {
+  const remainingPlanned = [...day.planned];
+  const previews: SessionPreview[] = [];
 
-  const activityRows = activities.map((activity) => {
+  for (const activity of day.activities) {
     const matchIndex = remainingPlanned.findIndex((p) => p.sport === activity.sport);
-    const matchedPlanned = matchIndex === -1 ? null : remainingPlanned.splice(matchIndex, 1)[0];
-    return { activity, matchedPlanned };
-  });
+    const matched = matchIndex === -1 ? null : remainingPlanned.splice(matchIndex, 1)[0];
+    previews.push({
+      key: activity.id,
+      icon: SPORT_ICONS[activity.sport] ?? "⚡",
+      label: matched
+        ? `${SPORT_LABELS[activity.sport]} ✓`
+        : `${SPORT_LABELS[activity.sport]} ${Math.round(activity.durationSec / 60)}m`,
+      variant: matched ? "done" : "activity",
+    });
+  }
 
-  return { activityRows, unmatchedPlanned: remainingPlanned };
+  for (const p of remainingPlanned) {
+    previews.push({
+      key: p.id,
+      icon: SPORT_ICONS[p.sport] ?? "⚡",
+      label: p.description.length > 14 ? `${p.description.slice(0, 14)}…` : p.description,
+      variant: "planned",
+    });
+  }
+
+  return previews;
 }
 
 function dayClassName(day: MonthDayData, todayKey: string): string {
@@ -72,21 +87,7 @@ function dayClassName(day: MonthDayData, todayKey: string): string {
 }
 
 export function MonthView({ days, todayKey }: { days: MonthDayData[]; todayKey: string }) {
-  const [modalDate, setModalDate] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  function handleCreate(formData: FormData) {
-    startTransition(async () => {
-      await createPlannedWorkout(formData);
-      setModalDate(null);
-    });
-  }
-
-  function handleDelete(formData: FormData) {
-    startTransition(async () => {
-      await deletePlannedWorkout(formData);
-    });
-  }
+  const [selectedDay, setSelectedDay] = useState<MonthDayData | null>(null);
 
   return (
     <>
@@ -97,96 +98,47 @@ export function MonthView({ days, todayKey }: { days: MonthDayData[]; todayKey: 
       </div>
 
       <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
-        {days.map((day) => (
-          <div
-            key={day.key}
-            className={`group relative flex min-h-[5.5rem] flex-col gap-1 p-1.5 sm:min-h-[6.5rem] sm:p-2 ${dayClassName(day, todayKey)}`}
-          >
-            <div className="flex items-center justify-between">
-              <p
-                className={
-                  day.key === todayKey ? "cal-day-num cal-day-num--today" : "cal-day-num"
-                }
-              >
-                {day.date.getUTCDate()}
-              </p>
-              <button
-                type="button"
-                onClick={() => setModalDate(day.key)}
-                className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-600 text-[11px] font-bold text-white opacity-0 shadow-sm transition-all hover:bg-orange-500 group-hover:opacity-100"
-                aria-label="Legg til planlagt økt"
-              >
-                +
-              </button>
-            </div>
+        {days.map((day) => {
+          const previews = buildSessionPreviews(day);
+          const extra = previews.length > 2 ? previews.length - 2 : 0;
 
-            {(() => {
-              const { activityRows, unmatchedPlanned } = matchPlannedToActivities(
-                day.activities,
-                day.planned,
-              );
+          return (
+            <button
+              key={day.key}
+              type="button"
+              onClick={() => setSelectedDay(day)}
+              className={`cal-day-btn ${dayClassName(day, todayKey)}`}
+            >
+              <div className="flex items-center justify-between">
+                <p className={day.key === todayKey ? "cal-day-num cal-day-num--today" : "cal-day-num"}>
+                  {day.date.getUTCDate()}
+                </p>
+                {previews.length === 0 && (
+                  <span className="cal-day-add" aria-hidden>
+                    +
+                  </span>
+                )}
+              </div>
 
-              return (
-                <div className="flex flex-col gap-1 overflow-hidden">
-                  {activityRows.map(({ activity: a, matchedPlanned }) => (
-                    <div
-                      key={a.id}
-                      className={`cal-activity ${matchedPlanned ? "cal-activity--done" : ""}`}
-                    >
-                      {matchedPlanned ? (
-                        <span className="cal-check">✓</span>
-                      ) : (
-                        <span
-                          className={`cal-dot ${SPORT_DOT_CLASSES[a.sport] ?? "cal-dot--other"}`}
-                        />
-                      )}
-                      <span className="truncate">
-                        {SPORT_LABELS[a.sport] ?? a.sport} · {Math.round(a.durationSec / 60)}m
-                        {matchedPlanned && (
-                          <span className="cal-activity-sub">
-                            {" "}
-                            (plan {matchedPlanned.durationMin}m)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  ))}
-
-                  {unmatchedPlanned.map((p) => (
-                    <div key={p.id} className="cal-activity cal-activity--planned">
-                      <span
-                        className={`cal-dot ${SPORT_DOT_CLASSES[p.sport] ?? "cal-dot--other"}`}
-                      />
-                      <span className="min-w-0 flex-1 truncate">
-                        {SPORT_LABELS[p.sport] ?? p.sport} · {p.durationMin}m
-                      </span>
-                      <form action={handleDelete}>
-                        <input type="hidden" name="id" value={p.id} />
-                        <button
-                          type="submit"
-                          className="shrink-0 text-base leading-none opacity-50 transition-opacity hover:opacity-100"
-                          style={{ color: "var(--muted)" }}
-                          aria-label="Slett"
-                        >
-                          ×
-                        </button>
-                      </form>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
-        ))}
+              <div className="mt-1 flex flex-col gap-0.5">
+                {previews.slice(0, 2).map((item) => (
+                  <div
+                    key={item.key}
+                    className={`cal-pill cal-pill--${item.variant}`}
+                  >
+                    <span className="shrink-0">{item.icon}</span>
+                    <span className="line-clamp-2 leading-tight">{item.label}</span>
+                  </div>
+                ))}
+                {extra > 0 && <span className="cal-pill-more">+{extra} til</span>}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {modalDate && (
-        <PlannedWorkoutForm
-          date={modalDate}
-          action={handleCreate}
-          pending={isPending}
-          onClose={() => setModalDate(null)}
-        />
+      {selectedDay && (
+        <DayDetailSheet day={selectedDay} onClose={() => setSelectedDay(null)} />
       )}
     </>
   );

@@ -569,6 +569,122 @@ body.app-locked {
   opacity: 1;
 }
 
+.cal-day-btn {
+  display: flex;
+  min-height: 5rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.375rem;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 640px) {
+  .cal-day-btn {
+    min-height: 6rem;
+    padding: 0.5rem;
+  }
+}
+
+.cal-day-btn:active {
+  transform: scale(0.97);
+}
+
+.cal-day-add {
+  display: flex;
+  height: 1.25rem;
+  width: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 107, 43, 0.2);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #ff8f4c;
+}
+
+.cal-pill {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+  border-radius: 0.375rem;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+@media (min-width: 640px) {
+  .cal-pill {
+    font-size: 0.6875rem;
+  }
+}
+
+.cal-pill--done {
+  background: rgba(61, 214, 140, 0.2);
+  color: #a7f3d0;
+}
+
+.cal-pill--activity {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e4e4e7;
+}
+
+.cal-pill--planned {
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted);
+}
+
+.cal-pill-more {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cal-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-radius: 0.875rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface);
+  padding: 0.875rem;
+}
+
+.cal-detail-item--done {
+  border-color: rgba(61, 214, 140, 0.25);
+  background: rgba(61, 214, 140, 0.08);
+}
+
+.cal-detail-item--planned {
+  border-style: dashed;
+}
+
+.cal-detail-badge {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cal-detail-badge--done {
+  background: rgba(61, 214, 140, 0.2);
+  color: #3dd68c;
+}
+
+[data-theme="light"] .cal-pill--done {
+  color: #14532d;
+}
+
+[data-theme="light"] .cal-pill--activity {
+  color: #18181b;
+}
+
 .cal-activity {
   display: flex;
   align-items: center;
