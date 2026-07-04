@@ -5,7 +5,8 @@ import { deletePlannedWorkout } from "@/app/(app)/calendar/actions";
 import { startOfIsoWeek, formatDateNb } from "@/lib/date";
 import { PmcChartLazy } from "@/components/pmc/PmcChartLazy";
 import { TsbGauge } from "@/components/pmc/TsbGauge";
-import { TrainingInsightCard } from "@/components/pmc/TrainingInsightCard";
+import { CoachTeaser } from "@/components/coach/CoachReport";
+import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { BentoStat } from "@/components/ui/BentoStat";
 import { SegmentedNav } from "@/components/ui/SegmentedNav";
@@ -104,6 +105,16 @@ export default async function Home({
     ? Math.ceil((user.raceDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
     : null;
 
+  const coachPreview = latestLoad
+    ? getTrainingInsight(
+        createInsightContext({
+          ctl: latestLoad.ctl,
+          atl: latestLoad.atl,
+          tsb: latestLoad.tsb,
+        }),
+      )
+    : null;
+
   const firstName = userName?.split(" ")[0] ?? "deg";
 
   return (
@@ -133,10 +144,8 @@ export default async function Home({
           </div>
         )}
 
-        {latestLoad && (
-          <div className="animate-in animate-in-delay-2">
-            <TrainingInsightCard ctl={latestLoad.ctl} atl={latestLoad.atl} tsb={latestLoad.tsb} />
-          </div>
+        {coachPreview && (
+          <CoachTeaser readiness={coachPreview.readiness} headline={coachPreview.headline} />
         )}
 
         {(user?.weeklyTssGoal || user?.raceName) && (

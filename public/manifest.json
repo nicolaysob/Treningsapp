@@ -4,7 +4,9 @@
   "short_name": "Treningsapp",
   "description": "Treningsbelastning, PMC, leaderboard og kalender for vennegjengen.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#050506",
   "theme_color": "#ff6b2b",
   "icons": [

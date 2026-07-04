@@ -32,8 +32,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="app-bg flex h-[100vh] min-h-[100vh] flex-col overflow-hidden">
-      <header className="shrink-0 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6 glass-header">
+    <div className="app-bg flex h-[100dvh] min-h-[100dvh] flex-col overflow-hidden">
+      <header className="shrink-0 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-[max(0.75rem,env(safe-area-inset-top))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] glass-header">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <AppLogo size="sm" />

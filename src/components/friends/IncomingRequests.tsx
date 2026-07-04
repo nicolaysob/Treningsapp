@@ -27,7 +27,7 @@ export function IncomingRequests({ requests }: { requests: Request[] }) {
                 <p className="truncate text-xs text-zinc-500">@{f.requester.username}</p>
               )}
             </div>
-            <div className="flex shrink-0 gap-2">
+            <div className="friend-request-actions">
               <form action={acceptFriendRequest}>
                 <input type="hidden" name="id" value={f.id} />
                 <button type="submit" className="friend-btn friend-btn--accept">
