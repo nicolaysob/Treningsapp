@@ -37,8 +37,12 @@ export function MonthGrid({
   todayKey: string;
   onChanged: () => void;
 }) {
-  const [selected, setSelected] = useState<CalendarDay | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const weeks = useMemo(() => chunkWeeks(days), [days]);
+  const selected = useMemo(
+    () => (selectedKey ? days.find((day) => day.key === selectedKey) ?? null : null),
+    [days, selectedKey],
+  );
 
   return (
     <>
@@ -57,6 +61,7 @@ export function MonthGrid({
               const total = summary.done + summary.planned + summary.strava;
               const isToday = day.key === todayKey;
               const muted = !day.isCurrentMonth;
+              const hasRace = Boolean(day.race);
 
               return (
                 <Pressable
@@ -65,18 +70,22 @@ export function MonthGrid({
                     styles.cell,
                     muted && styles.cellMuted,
                     isToday && styles.cellToday,
+                    hasRace && styles.cellRace,
                   ]}
-                  onPress={() => setSelected(day)}
+                  onPress={() => setSelectedKey(day.key)}
                 >
-                  <Text
-                    style={[
-                      styles.dayNumText,
-                      isToday && styles.dayNumTodayText,
-                      muted && styles.dayNumMuted,
-                    ]}
-                  >
-                    {dayNumberFromKey(day.key)}
-                  </Text>
+                  <View style={styles.cellTop}>
+                    <Text
+                      style={[
+                        styles.dayNumText,
+                        isToday && styles.dayNumTodayText,
+                        muted && styles.dayNumMuted,
+                      ]}
+                    >
+                      {dayNumberFromKey(day.key)}
+                    </Text>
+                    {hasRace ? <Text style={styles.raceFlag}>🏁</Text> : null}
+                  </View>
                   {total > 0 ? (
                     <View style={styles.dots}>
                       {Array.from({ length: Math.min(summary.done, 3) }).map((_, i) => (
@@ -96,7 +105,11 @@ export function MonthGrid({
         ))}
       </View>
       {selected && (
-        <DaySheet day={selected} onClose={() => setSelected(null)} onChanged={onChanged} />
+        <DaySheet
+          day={selected}
+          onClose={() => setSelectedKey(null)}
+          onChanged={onChanged}
+        />
       )}
     </>
   );
@@ -128,9 +141,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,107,53,0.35)",
   },
+  cellRace: {
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.35)",
+    backgroundColor: "rgba(251,191,36,0.06)",
+  },
+  cellTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 2,
+  },
   dayNumText: { color: colors.text, fontSize: 13, fontWeight: "600" },
   dayNumMuted: { color: colors.textDim },
   dayNumTodayText: { color: colors.accentSoft, fontWeight: "800" },
+  raceFlag: { fontSize: 10, lineHeight: 12 },
   dots: { flexDirection: "row", flexWrap: "wrap", gap: 3, minHeight: 5 },
   dotsPlaceholder: { minHeight: 5 },
   dot: { width: 5, height: 5, borderRadius: 3 },

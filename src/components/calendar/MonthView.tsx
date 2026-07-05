@@ -27,6 +27,7 @@ export interface MonthDayData {
   isCurrentMonth: boolean;
   activities: CalendarActivity[];
   planned: CalendarPlannedWorkout[];
+  race: { name: string } | null;
 }
 
 type DaySummary = {
@@ -78,17 +79,21 @@ export function MonthView({ days, todayKey }: { days: MonthDayData[]; todayKey: 
         {days.map((day) => {
           const summary = summarizeDay(day);
           const total = summary.done + summary.planned + summary.strava;
+          const hasRace = Boolean(day.race);
 
           return (
             <button
               key={day.key}
               type="button"
               onClick={() => setSelectedDay(day)}
-              className={`cal-day-btn ${dayClassName(day, todayKey)}`}
+              className={`cal-day-btn ${dayClassName(day, todayKey)}${hasRace ? " cal-day--race" : ""}`}
             >
-              <p className={day.key === todayKey ? "cal-day-num cal-day-num--today" : "cal-day-num"}>
-                {day.date.getUTCDate()}
-              </p>
+              <div className="flex items-start justify-between gap-0.5">
+                <p className={day.key === todayKey ? "cal-day-num cal-day-num--today" : "cal-day-num"}>
+                  {day.date.getUTCDate()}
+                </p>
+                {hasRace ? <span className="text-[10px] leading-none" title={day.race!.name}>🏁</span> : null}
+              </div>
 
               {total > 0 ? (
                 <div className="mt-1 flex flex-col items-start gap-1">

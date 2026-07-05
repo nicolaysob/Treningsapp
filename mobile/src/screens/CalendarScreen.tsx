@@ -66,6 +66,7 @@ export function CalendarScreen() {
           <Legend color={colors.green} label="Utført plan" hollow={false} />
           <Legend color={colors.accent} label="Planlagt" hollow />
           <Legend color="#fc4c02" label="Strava" hollow={false} />
+          <Legend emoji="🏁" label="Race" />
         </View>
         {data && (
           <MonthGrid days={data.days} todayKey={todayKey} onChanged={() => void load()} />
@@ -79,21 +80,27 @@ function Legend({
   color,
   label,
   hollow,
+  emoji,
 }: {
-  color: string;
+  color?: string;
   label: string;
   hollow?: boolean;
+  emoji?: string;
 }) {
   return (
     <View style={styles.legendItem}>
-      <View
-        style={[
-          styles.legendDot,
-          hollow
-            ? { borderWidth: 1.5, borderColor: color, backgroundColor: "transparent" }
-            : { backgroundColor: color },
-        ]}
-      />
+      {emoji ? (
+        <Text style={styles.legendEmoji}>{emoji}</Text>
+      ) : (
+        <View
+          style={[
+            styles.legendDot,
+            hollow
+              ? { borderWidth: 1.5, borderColor: color, backgroundColor: "transparent" }
+              : { backgroundColor: color },
+          ]}
+        />
+      )}
       <Text style={styles.legendText}>{label}</Text>
     </View>
   );
@@ -104,5 +111,6 @@ const styles = StyleSheet.create({
   legend: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
   legendDot: { width: 7, height: 7, borderRadius: 4 },
+  legendEmoji: { fontSize: 10, lineHeight: 12 },
   legendText: { color: colors.textDim, fontSize: 11, fontWeight: "600" },
 });

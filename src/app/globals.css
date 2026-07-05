@@ -1846,6 +1846,11 @@ html.standalone-app body {
   box-shadow: 0 0 0 1px rgba(255, 107, 43, 0.15);
 }
 
+.cal-day--race {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.06);
+}
+
 .cal-day--muted {
   border-color: transparent;
   background: rgba(128, 128, 128, 0.06);

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const gridEnd = new Date(gridDays[gridDays.length - 1]);
   gridEnd.setUTCDate(gridEnd.getUTCDate() + 1);
 
-  const [activities, planned] = await Promise.all([
+  const [activities, planned, user] = await Promise.all([
     prisma.activity.findMany({
       where: { userId, date: { gte: gridStart, lt: gridEnd } },
       orderBy: { date: "asc" },
@@ -29,7 +29,14 @@ export async function GET(request: Request) {
       orderBy: { date: "asc" },
       select: { id: true, date: true, sport: true, description: true, durationMin: true },
     }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { raceName: true, raceDate: true },
+    }),
   ]);
+
+  const raceKey = user?.raceDate ? toDateKey(user.raceDate) : null;
+  const raceName = user?.raceName ?? null;
 
   const activitiesByDay = new Map<string, typeof activities>();
   for (const activity of activities) {
@@ -59,7 +66,13 @@ export async function GET(request: Request) {
         durationSec: a.durationSec,
         tss: a.tss,
       })),
-      planned: plannedByDay.get(key) ?? [],
+      planned: (plannedByDay.get(key) ?? []).map((p) => ({
+        id: p.id,
+        sport: p.sport,
+        description: p.description,
+        durationMin: p.durationMin,
+      })),
+      race: raceKey === key && raceName ? { name: raceName } : null,
     };
   });
 

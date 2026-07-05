@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { prisma } from "@/lib/db";
+import { parseCalendarDateKey } from "@/lib/date";
 import { recomputeDailyLoad } from "@/lib/training-load/batch";
 import { invalidateActivityZones, syncActivityZones } from "@/lib/strava/sync-zones";
 import { revalidateUserCache, invalidateUserCache } from "@/lib/cache/user-data";
@@ -9,15 +10,21 @@ export async function updateTrainingGoals(
   userId: string,
   input: { weeklyTssGoal?: number | null; raceName?: string | null; raceDate?: string | null },
 ): Promise<void> {
-  const raceName = input.raceName?.trim() ?? "";
+  const data: {
+    weeklyTssGoal?: number | null;
+    raceName?: string | null;
+    raceDate?: Date | null;
+  } = {};
+
+  if (input.weeklyTssGoal !== undefined) data.weeklyTssGoal = input.weeklyTssGoal;
+  if (input.raceName !== undefined) data.raceName = input.raceName?.trim() || null;
+  if (input.raceDate !== undefined) {
+    data.raceDate = input.raceDate ? parseCalendarDateKey(input.raceDate) : null;
+  }
 
   await prisma.user.update({
     where: { id: userId },
-    data: {
-      weeklyTssGoal: input.weeklyTssGoal ?? null,
-      raceName: raceName || null,
-      raceDate: input.raceDate ? new Date(input.raceDate) : null,
-    },
+    data,
   });
 
   invalidateUserCache(userId);

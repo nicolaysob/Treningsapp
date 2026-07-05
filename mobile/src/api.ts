@@ -37,6 +37,7 @@ export type CalendarDay = {
   isCurrentMonth: boolean;
   activities: Array<{ id: string; sport: string; durationSec: number; tss: number | null }>;
   planned: Array<{ id: string; sport: string; description: string; durationMin: number }>;
+  race: { name: string } | null;
 };
 
 export type CalendarData = {

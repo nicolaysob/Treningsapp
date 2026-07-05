@@ -36,7 +36,7 @@ export default async function CalendarPage({
   const gridEnd = new Date(gridDays[gridDays.length - 1]);
   gridEnd.setUTCDate(gridEnd.getUTCDate() + 1);
 
-  const [activities, planned] = await Promise.all([
+  const [activities, planned, user] = await Promise.all([
     prisma.activity.findMany({
       where: { userId, date: { gte: gridStart, lt: gridEnd } },
       orderBy: { date: "asc" },
@@ -47,7 +47,14 @@ export default async function CalendarPage({
       orderBy: { date: "asc" },
       select: { id: true, date: true, sport: true, description: true, durationMin: true },
     }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { raceName: true, raceDate: true },
+    }),
   ]);
+
+  const raceKey = user?.raceDate ? toDateKey(user.raceDate) : null;
+  const raceName = user?.raceName ?? null;
 
   const activitiesByDay = new Map<string, typeof activities>();
   for (const activity of activities) {
@@ -73,6 +80,7 @@ export default async function CalendarPage({
       isCurrentMonth: date.getUTCMonth() === monthStart.getUTCMonth(),
       activities: activitiesByDay.get(key) ?? [],
       planned: plannedByDay.get(key) ?? [],
+      race: raceKey === key && raceName ? { name: raceName } : null,
     };
   });
 
@@ -107,6 +115,9 @@ export default async function CalendarPage({
             </span>
             <span className="flex items-center gap-1.5">
               <span className="cal-dot cal-dot--strava" /> Strava (ikke plan)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span aria-hidden>🏁</span> Race-mål
             </span>
           </div>
           <MonthView days={days} todayKey={toDateKey(new Date())} />

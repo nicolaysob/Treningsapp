@@ -83,7 +83,7 @@ export function TrainingSettingsScreen() {
         raceName: raceName.trim() || null,
         raceDate: raceDate.trim() || null,
       });
-      setMessage("Mål lagret");
+      setMessage("Mål lagret — race vises i kalenderen med 🏁");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunne ikke lagre mål");
     } finally {
