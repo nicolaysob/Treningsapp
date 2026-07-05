@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
+import {
+  buildHomeCoachNarrative,
+  createInsightContext,
+  getTrainingInsight,
+} from "@/lib/training-load/insight";
 
 describe("getTrainingInsight", () => {
   it("flags early base-building when CTL is very low", () => {
@@ -98,5 +102,26 @@ describe("getTrainingInsight", () => {
     const result = getTrainingInsight(createInsightContext({ ctl: 50, atl: 52, tsb: -2 }));
     expect(result.readiness).toBeGreaterThanOrEqual(0);
     expect(result.readiness).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("buildHomeCoachNarrative", () => {
+  it("builds a short narrative without long multi-paragraph blocks", () => {
+    const narrative = buildHomeCoachNarrative(
+      createInsightContext({
+        ctl: 36,
+        atl: 38,
+        tsb: -6,
+        weekTss: 307,
+        weeklyTssGoal: 400,
+        raceName: "Eina triatlon",
+        daysToRace: 27,
+      }),
+    );
+
+    expect(narrative).not.toContain("\n\n");
+    expect(narrative.split(". ").length).toBeLessThanOrEqual(6);
+    expect(narrative).toMatch(/Eina triatlon/i);
+    expect(narrative).toMatch(/TSS denne uken/i);
   });
 });

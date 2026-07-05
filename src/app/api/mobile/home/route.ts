@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getUserIdFromBearer } from "@/lib/auth-mobile";
 import { prisma } from "@/lib/db";
 import { startOfIsoWeek, toDateKey, parseCalendarDateKey, formatDateNb, osloDateKey, osloDayStart, addDaysToKey, osloWeekday } from "@/lib/date";
-import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
+import { fetchTrainingInsightContext } from "@/lib/training-load/fetch-context";
+import { buildHomeCoachNarrative, getTrainingInsight } from "@/lib/training-load/insight";
 
 const PMC_OPTIONS = [30, 90, 180, 365];
 const DEFAULT_PMC_DAYS = 90;
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
   const weekEnd = new Date(weekStart);
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
 
-  const [user, latestLoad, dailyLoad, weekTssResult, plannedTodayTomorrow] = await Promise.all([
+  const [user, latestLoad, dailyLoad, weekTssResult, plannedTodayTomorrow, insightContext] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, weeklyTssGoal: true, raceName: true, raceDate: true },
@@ -73,18 +74,11 @@ export async function GET(request: Request) {
       orderBy: { date: "asc" },
       select: { sport: true, description: true, durationMin: true, date: true },
     }),
+    fetchTrainingInsightContext(userId),
   ]);
 
   const weekTss = weekTssResult._sum.dailyTss ?? 0;
-  const coachPreview = latestLoad
-    ? getTrainingInsight(
-        createInsightContext({
-          ctl: latestLoad.ctl,
-          atl: latestLoad.atl,
-          tsb: latestLoad.tsb,
-        }),
-      )
-    : null;
+  const coachPreview = insightContext ? getTrainingInsight(insightContext) : null;
 
   const todayWorkouts = plannedTodayTomorrow.filter((p) => toDateKey(p.date) === todayKey);
   const tomorrowWorkouts = plannedTodayTomorrow.filter((p) => toDateKey(p.date) === tomorrowKey);
@@ -103,7 +97,7 @@ export async function GET(request: Request) {
     raceName: user?.raceName ?? null,
     daysToRace,
     coachTitle: coachPreview?.headline ?? null,
-    coachSummary: coachPreview?.detail ?? null,
+    coachSummary: insightContext ? buildHomeCoachNarrative(insightContext) : null,
     coachReadiness: coachPreview?.readiness ?? null,
     coachTone: coachPreview?.tone ?? null,
     pmcChart: dailyLoad.map((row) => ({

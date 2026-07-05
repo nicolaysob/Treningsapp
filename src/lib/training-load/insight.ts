@@ -674,6 +674,60 @@ export function getTrainingInsight(ctx: TrainingInsightContext): TrainingInsight
   return result;
 }
 
+function tsbFormLabel(tsb: number): string {
+  if (tsb > 5) return "frisk";
+  if (tsb > -10) return "balansert";
+  if (tsb > -30) return "sliten";
+  return "hardt presset";
+}
+
+/** Compact home-screen narrative — up to five sentences. */
+const HOME_NARRATIVE_MAX_SENTENCES = 5;
+
+export function buildHomeCoachNarrative(ctx: TrainingInsightContext): string {
+  const insight = getTrainingInsight(ctx);
+  const hits = collectAllRuleHits(ctx);
+  const sentences: string[] = [insight.detail];
+
+  for (const hit of hits.slice(1)) {
+    if (sentences.length >= HOME_NARRATIVE_MAX_SENTENCES) break;
+    if (hit.detail && !sentences.some((s) => s.includes(hit.detail))) {
+      sentences.push(hit.detail);
+    }
+  }
+
+  if (ctx.raceName && ctx.daysToRace !== null && ctx.daysToRace >= 0) {
+    const days =
+      ctx.daysToRace === 0
+        ? "i dag"
+        : ctx.daysToRace === 1
+          ? "1 dag"
+          : `${ctx.daysToRace} dager`;
+    const raceLine = `${ctx.raceName} er om ${days}.`;
+    if (!sentences.some((s) => s.includes(ctx.raceName!)) && sentences.length < HOME_NARRATIVE_MAX_SENTENCES) {
+      sentences.push(raceLine);
+    }
+  }
+
+  if (ctx.weekTss > 0 && sentences.length < HOME_NARRATIVE_MAX_SENTENCES) {
+    const form = tsbFormLabel(ctx.tsb);
+    let weekLine = `Formen er ${form} (TSB ${ctx.tsb > 0 ? "+" : ""}${ctx.tsb.toFixed(0)}), og du har ${Math.round(ctx.weekTss)} TSS denne uken`;
+    if (ctx.weeklyTssGoal && ctx.weeklyTssGoal > 0) {
+      weekLine += ` av ${ctx.weeklyTssGoal}`;
+    }
+    if (!sentences.some((s) => s.includes("TSS denne uken"))) {
+      sentences.push(`${weekLine}.`);
+    }
+  }
+
+  for (const tip of insight.tips) {
+    if (sentences.length >= HOME_NARRATIVE_MAX_SENTENCES) break;
+    if (!sentences.some((s) => s.includes(tip))) sentences.push(tip);
+  }
+
+  return sentences.slice(0, HOME_NARRATIVE_MAX_SENTENCES).join(" ");
+}
+
 /** Minimal context helper for tests and simple call sites. */
 export function createInsightContext(
   partial: Partial<TrainingInsightContext> & Pick<TrainingInsightContext, "ctl" | "atl" | "tsb">,

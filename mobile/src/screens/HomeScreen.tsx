@@ -12,6 +12,7 @@ import type { AppTabParamList } from "../navigation/AppTabs";
 import {
   Card,
   CardHeader,
+  CoachCard,
   EmptyState,
   ErrorText,
   HeroHeader,
@@ -19,7 +20,6 @@ import {
   ProgressBar,
   RowItem,
   Screen,
-  StatChip,
 } from "../components/ui";
 import { colors } from "../theme";
 
@@ -110,16 +110,24 @@ export function HomeScreen() {
       <HeroHeader
         label={data.greeting ?? "Hei"}
         title={firstName}
-        subtitle={data.latestLoad ? "Din treningsstatus" : "Koble Strava for å komme i gang"}
+        subtitle={
+          data.latestLoad
+            ? data.coachTitle ?? "Din treningsstatus"
+            : "Koble Strava for å komme i gang"
+        }
         right={<TsbGauge tsb={data.latestLoad?.tsb ?? null} />}
       />
 
-      {data.latestLoad ? (
-        <View style={styles.statRow}>
-          <StatChip label="CTL" value={data.latestLoad.ctl.toFixed(0)} tint={colors.blue} />
-          <StatChip label="ATL" value={data.latestLoad.atl.toFixed(0)} tint={colors.accent} />
-          <StatChip label="Uke" value={Math.round(data.weekTss).toString()} tint={colors.green} />
-        </View>
+      {data.coachSummary ? (
+        <Pressable onPress={() => navigation.navigate("Coach")}>
+          <CoachCard
+            tone={data.coachTone ?? "balanced"}
+            title={data.coachTitle ?? "Din coach"}
+            body={data.coachSummary}
+            showReadiness={false}
+            footer="Trykk for full analyse →"
+          />
+        </Pressable>
       ) : null}
 
       {(weekGoal || data.raceName) && (
@@ -215,7 +223,6 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  statRow: { flexDirection: "row", gap: 8 },
   pmcCard: { gap: 12 },
   goalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   goalLabel: { color: colors.textDim, fontSize: 13 },

@@ -180,22 +180,30 @@ export function CoachCard({
   readiness,
   title,
   body,
+  showReadiness = true,
+  footer,
 }: {
   tone?: keyof typeof coachTone;
   readiness?: number | null;
   title: string;
   body?: string;
+  showReadiness?: boolean;
+  footer?: string;
 }) {
   const t = coachTone[tone] ?? coachTone.balanced;
   return (
     <LinearGradient colors={[...t.bg]} style={[styles.coachCard, { borderColor: t.border }]}>
-      {readiness != null && (
-        <View style={styles.readinessPill}>
-          <Text style={[styles.coachReadiness, { color: t.text }]}>Readiness {readiness}%</Text>
-        </View>
-      )}
+      <View style={styles.coachTop}>
+        <Text style={styles.coachEyebrow}>✦ Coach</Text>
+        {showReadiness && readiness != null ? (
+          <View style={styles.readinessPill}>
+            <Text style={[styles.coachReadiness, { color: t.text }]}>{readiness}% form</Text>
+          </View>
+        ) : null}
+      </View>
       <Text style={[styles.coachTitle, { color: t.text }]}>{title}</Text>
       {body ? <Text style={styles.coachBody}>{body}</Text> : null}
+      {footer ? <Text style={styles.coachFooter}>{footer}</Text> : null}
     </LinearGradient>
   );
 }
@@ -403,8 +411,20 @@ const styles = StyleSheet.create({
     gap: 8,
     ...shadow.card,
   },
+  coachTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  coachEyebrow: {
+    color: colors.textDim,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
   readinessPill: {
-    alignSelf: "flex-start",
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: radii.pill,
     paddingHorizontal: 10,
@@ -412,7 +432,8 @@ const styles = StyleSheet.create({
   },
   coachReadiness: { fontSize: 11, fontWeight: "700" },
   coachTitle: { fontSize: 18, fontWeight: "800", lineHeight: 24, letterSpacing: -0.3 },
-  coachBody: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  coachBody: { color: colors.textMuted, fontSize: 14, lineHeight: 22 },
+  coachFooter: { color: colors.accentSoft, fontSize: 12, fontWeight: "600", marginTop: 2 },
 
   row: {
     flexDirection: "row",
