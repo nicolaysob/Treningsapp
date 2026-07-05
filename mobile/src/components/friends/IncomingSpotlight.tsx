@@ -1,7 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { UserAvatar } from "../UserAvatar";
-import { colors, radii } from "../../theme";
+import { colors, radii, shadow } from "../../theme";
 
 type User = { name: string | null; username: string | null };
 
@@ -19,7 +18,7 @@ export function IncomingSpotlight({
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
-        <Text style={styles.title}>⚡ Vil duelle</Text>
+        <Text style={styles.title}>Vil duelle</Text>
         <View style={styles.count}>
           <Text style={styles.countText}>{requests.length}</Text>
         </View>
@@ -34,12 +33,7 @@ export function IncomingSpotlight({
           const display = r.user.name ?? r.user.username ?? "Ukjent";
           const first = display.split(" ")[0];
           return (
-            <LinearGradient
-              key={r.id}
-              colors={["#1a120e", "#120c08", "#0a0a0c"]}
-              style={styles.card}
-            >
-              <View style={styles.cardStripe} />
+            <View key={r.id} style={styles.card}>
               <Text style={styles.cardKicker}>Ny utfordrer</Text>
               <View style={styles.cardAvatar}>
                 <UserAvatar name={r.user.name} username={r.user.username} size="xl" highlight />
@@ -48,16 +42,16 @@ export function IncomingSpotlight({
               {r.user.username ? (
                 <Text style={styles.cardHandle}>@{r.user.username}</Text>
               ) : null}
-              <Text style={styles.cardBody}>Vil bli med i troppen din og konkurrere hver uke.</Text>
+              <Text style={styles.cardBody}>Vil bli med i troppen og konkurrere hver uke.</Text>
               <View style={styles.cardActions}>
                 <Pressable style={styles.accept} onPress={() => onAccept(r.id)}>
-                  <Text style={styles.acceptText}>Ta imot ⚔️</Text>
+                  <Text style={styles.acceptText}>Ta imot</Text>
                 </Pressable>
                 <Pressable style={styles.decline} onPress={() => onDecline(r.id)}>
                   <Text style={styles.declineText}>Ignorer</Text>
                 </Pressable>
               </View>
-            </LinearGradient>
+            </View>
           );
         })}
       </ScrollView>
@@ -76,7 +70,7 @@ export function OutgoingStrip({
 
   return (
     <View style={styles.outWrap}>
-      <Text style={styles.outTitle}>Ute på feltet</Text>
+      <Text style={styles.outTitle}>Venter på svar</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.outScroll}>
         {requests.map((r) => (
           <Pressable key={r.id} style={styles.outChip} onPress={() => onCancel(r.id)}>
@@ -85,7 +79,7 @@ export function OutgoingStrip({
               <Text style={styles.outName} numberOfLines={1}>
                 {r.user.name?.split(" ")[0] ?? r.user.username ?? "?"}
               </Text>
-              <Text style={styles.outHint}>Venter · trykk for å angre</Text>
+              <Text style={styles.outHint}>Trykk for å angre</Text>
             </View>
           </Pressable>
         ))}
@@ -97,10 +91,9 @@ export function OutgoingStrip({
 export function EmptyArena() {
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyEmoji}>⚔️</Text>
-      <Text style={styles.emptyTitle}>Arenaen er tom</Text>
+      <Text style={styles.emptyTitle}>Ingen rivaler ennå</Text>
       <Text style={styles.emptyBody}>
-        Send en utfordring ovenfor. Når de sier ja, dukker de opp her — og i ukentlig duell.
+        Send en utfordring ovenfor. Når de sier ja, dukker de opp her og i Duell-fanen.
       </Text>
       <View style={styles.emptySteps}>
         <Step n="1" text="Søk brukernavn" />
@@ -123,62 +116,55 @@ function Step({ n, text }: { n: string; text: string }) {
 const styles = StyleSheet.create({
   wrap: { gap: 10 },
   head: { flexDirection: "row", alignItems: "center", gap: 8 },
-  title: { color: colors.text, fontSize: 16, fontWeight: "900" },
+  title: { color: colors.text, fontSize: 15, fontWeight: "700" },
   count: {
     backgroundColor: colors.accent,
     borderRadius: radii.pill,
-    minWidth: 22,
-    height: 22,
+    minWidth: 20,
+    height: 20,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
   },
-  countText: { color: "#fff", fontSize: 11, fontWeight: "900" },
-  scroll: { gap: 12, paddingRight: 4 },
+  countText: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  scroll: { gap: 10, paddingRight: 4 },
   card: {
-    width: 260,
+    width: 240,
     borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: "rgba(255,107,43,0.25)",
-    padding: 18,
-    overflow: "hidden",
-  },
-  cardStripe: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    backgroundColor: colors.accent,
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.surfaceRaised,
+    padding: 16,
+    ...shadow.card,
   },
   cardKicker: {
     color: colors.accentSoft,
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 0.6,
   },
-  cardAvatar: { alignSelf: "center", marginVertical: 14 },
-  cardName: { color: colors.text, fontSize: 22, fontWeight: "900", textAlign: "center" },
-  cardHandle: { color: colors.textDim, fontSize: 13, textAlign: "center", marginTop: 2 },
+  cardAvatar: { alignSelf: "center", marginVertical: 12 },
+  cardName: { color: colors.text, fontSize: 20, fontWeight: "800", textAlign: "center" },
+  cardHandle: { color: colors.textDim, fontSize: 12, textAlign: "center", marginTop: 2 },
   cardBody: {
     color: colors.textDim,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
     textAlign: "center",
-    marginTop: 10,
-    marginBottom: 14,
+    marginTop: 8,
+    marginBottom: 12,
   },
-  cardActions: { gap: 8 },
+  cardActions: { gap: 6 },
   accept: {
     backgroundColor: colors.green,
     borderRadius: radii.md,
-    paddingVertical: 12,
+    paddingVertical: 11,
     alignItems: "center",
   },
-  acceptText: { color: "#042f1a", fontSize: 14, fontWeight: "900" },
-  decline: { alignItems: "center", paddingVertical: 6 },
-  declineText: { color: colors.textDim, fontSize: 12, fontWeight: "700" },
+  acceptText: { color: "#042f1a", fontSize: 14, fontWeight: "700" },
+  decline: { alignItems: "center", paddingVertical: 4 },
+  declineText: { color: colors.textDim, fontSize: 12, fontWeight: "600" },
 
   outWrap: { gap: 8 },
   outTitle: {
@@ -186,14 +172,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   outScroll: { gap: 8 },
   outChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surfaceRaised,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     borderRadius: radii.pill,
@@ -201,32 +187,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingRight: 16,
   },
-  outName: { color: colors.textMuted, fontSize: 13, fontWeight: "800", maxWidth: 100 },
+  outName: { color: colors.textMuted, fontSize: 13, fontWeight: "700", maxWidth: 100 },
   outHint: { color: colors.textDim, fontSize: 10, marginTop: 1 },
 
   empty: {
     alignItems: "center",
-    paddingVertical: 32,
-    paddingHorizontal: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 18,
     borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: "rgba(255,107,43,0.15)",
-    backgroundColor: "rgba(255,107,43,0.04)",
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.surface,
     gap: 8,
   },
-  emptyEmoji: { fontSize: 48 },
-  emptyTitle: { color: colors.text, fontSize: 22, fontWeight: "900" },
-  emptyBody: { color: colors.textDim, fontSize: 14, textAlign: "center", lineHeight: 21 },
-  emptySteps: { flexDirection: "row", gap: 8, marginTop: 12 },
+  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "700" },
+  emptyBody: { color: colors.textDim, fontSize: 13, textAlign: "center", lineHeight: 19 },
+  emptySteps: { flexDirection: "row", gap: 8, marginTop: 10 },
   step: {
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.25)",
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    minWidth: 90,
+    paddingHorizontal: 10,
+    minWidth: 84,
     gap: 4,
   },
-  stepN: { color: colors.accent, fontSize: 16, fontWeight: "900" },
-  stepText: { color: colors.textDim, fontSize: 10, fontWeight: "700", textAlign: "center" },
+  stepN: { color: colors.accent, fontSize: 14, fontWeight: "800" },
+  stepText: { color: colors.textDim, fontSize: 10, fontWeight: "600", textAlign: "center" },
 });

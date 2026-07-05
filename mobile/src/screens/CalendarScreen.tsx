@@ -100,9 +100,9 @@ function Legend({
 }
 
 const styles = StyleSheet.create({
-  card: { gap: 12 },
-  legend: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  card: { gap: 14, padding: 16 },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
   legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendDot: { width: 7, height: 7, borderRadius: 4 },
   legendText: { color: colors.textDim, fontSize: 11, fontWeight: "600" },
 });

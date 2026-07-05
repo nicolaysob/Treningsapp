@@ -6,16 +6,16 @@ import {
   Text,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { login } from "../api";
 import { saveToken } from "../auth";
 import { saveConsentAccepted } from "../consent";
 import { PRIVACY_TEXT, TERMS_TEXT } from "../legal";
+import { AmbientBackground } from "../components/AmbientBackground";
 import { ConsentRow, LegalSheet } from "../components/legal/LegalSheet";
 import { Button, ErrorText, Input } from "../components/ui";
-import { colors, radii } from "../theme";
+import { colors, radii, shadow } from "../theme";
 
 export function LoginScreen({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
   const insets = useSafeAreaInsets();
@@ -50,74 +50,53 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: (token: string) => voi
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <LinearGradient
-        colors={["#120a08", colors.bg, "#080a12"]}
-        style={[styles.inner, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 20 }]}
-      >
-        <View style={styles.brandGlow} />
-
-        <View style={styles.brand}>
-          <View style={styles.logo}>
-            <Ionicons name="barbell" size={28} color={colors.accentSoft} />
+      <AmbientBackground>
+        <View style={[styles.inner, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
+          <View style={styles.brand}>
+            <View style={styles.logo}>
+              <Ionicons name="pulse" size={26} color={colors.accent} />
+            </View>
+            <Text style={styles.title}>Treningsapp</Text>
+            <Text style={styles.subtitle}>Logg inn for å fortsette</Text>
           </View>
-          <Text style={styles.title}>Treningsapp</Text>
-          <Text style={styles.subtitle}>Logg inn for å fortsette til kontoen din</Text>
-        </View>
 
-        <View style={styles.form}>
-          <Text style={styles.formLabel}>KONTO</Text>
-
-          <View style={styles.field}>
-            <Ionicons name="person-outline" size={18} color={colors.textDim} />
+          <View style={styles.form}>
             <Input
               placeholder="Brukernavn"
               autoCapitalize="none"
               autoCorrect={false}
               value={username}
               onChangeText={setUsername}
-              style={styles.fieldInput}
             />
-          </View>
-
-          <View style={styles.field}>
-            <Ionicons name="lock-closed-outline" size={18} color={colors.textDim} />
             <Input
               placeholder="Passord"
               secureTextEntry
               value={password}
               onChangeText={setPassword}
-              style={styles.fieldInput}
+            />
+
+            <ConsentRow
+              checked={consent}
+              onToggle={() => setConsent((v) => !v)}
+              onPrivacy={() => setShowPrivacy(true)}
+              onTerms={() => setShowTerms(true)}
+            />
+
+            {error && <ErrorText text={error} />}
+
+            <Button
+              label="Logg inn"
+              onPress={() => void handleLogin()}
+              disabled={loading || !canSubmit}
+              loading={loading}
             />
           </View>
 
-          <ConsentRow
-            checked={consent}
-            onToggle={() => setConsent((v) => !v)}
-            onPrivacy={() => setShowPrivacy(true)}
-            onTerms={() => setShowTerms(true)}
-          />
-
-          {error && <ErrorText text={error} />}
-
-          <Button
-            label="Logg inn sikkert"
-            onPress={() => void handleLogin()}
-            disabled={loading || !canSubmit}
-            loading={loading}
-          />
-
-          <View style={styles.secure}>
-            <Ionicons name="shield-checkmark-outline" size={14} color={colors.textDim} />
-            <Text style={styles.secureText}>
-              Token lagres kryptert på enheten via Secure Store
-            </Text>
-          </View>
+          <Text style={styles.footer}>
+            Har du ikke konto? Opprett på nett først.
+          </Text>
         </View>
-
-        <Text style={styles.footer}>
-          Har du ikke konto? Opprett på nett først, deretter logg inn her.
-        </Text>
-      </LinearGradient>
+      </AmbientBackground>
 
       <LegalSheet title="Vilkår for bruk" body={TERMS_TEXT} visible={showTerms} onClose={() => setShowTerms(false)} />
       <LegalSheet title="Personvern" body={PRIVACY_TEXT} visible={showPrivacy} onClose={() => setShowPrivacy(false)} />
@@ -126,74 +105,40 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: (token: string) => voi
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1 },
   inner: {
     flex: 1,
     paddingHorizontal: 24,
-    overflow: "hidden",
     justifyContent: "center",
+    gap: 28,
   },
-  brandGlow: {
-    position: "absolute",
-    top: "18%",
-    alignSelf: "center",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(255,107,43,0.1)",
-  },
-  brand: { alignItems: "center", marginBottom: 28 },
+  brand: { alignItems: "center" },
   logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,107,43,0.12)",
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: colors.accentSubtle,
     borderWidth: 1,
-    borderColor: "rgba(255,107,43,0.25)",
+    borderColor: "rgba(255,107,53,0.2)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  title: { fontSize: 30, fontWeight: "900", color: colors.text, letterSpacing: -0.5 },
-  subtitle: { marginTop: 8, fontSize: 14, color: colors.textDim, textAlign: "center" },
+  title: { fontSize: 32, fontWeight: "800", color: colors.text, letterSpacing: -0.8 },
+  subtitle: { marginTop: 6, fontSize: 15, color: colors.textDim },
 
   form: {
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     padding: 20,
     gap: 12,
+    ...shadow.card,
   },
-  formLabel: {
-    color: colors.textDim,
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    marginBottom: 2,
-  },
-  field: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "rgba(0,0,0,0.25)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    paddingHorizontal: 12,
-  },
-  fieldInput: {
-    flex: 1,
-    borderWidth: 0,
-    backgroundColor: "transparent",
-    paddingHorizontal: 0,
-  },
-  secure: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center" },
-  secureText: { color: colors.textDim, fontSize: 11, fontWeight: "600" },
   footer: {
-    marginTop: 20,
     color: colors.textDim,
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
     lineHeight: 18,
   },

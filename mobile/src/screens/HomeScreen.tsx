@@ -19,6 +19,7 @@ import {
   ProgressBar,
   RowItem,
   Screen,
+  StatChip,
 } from "../components/ui";
 import { colors } from "../theme";
 
@@ -102,10 +103,6 @@ export function HomeScreen() {
   const weekProgress =
     weekGoal && weekGoal > 0 ? Math.min(100, (data.weekTss / weekGoal) * 100) : null;
 
-  const heroSubtitle = data.latestLoad
-    ? `CTL ${data.latestLoad.ctl.toFixed(0)} · ATL ${data.latestLoad.atl.toFixed(0)} · ${Math.round(data.weekTss)} TSS`
-    : "Synk Strava på nett";
-
   return (
     <Screen refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))}>
       {error && <ErrorText text={error} />}
@@ -113,9 +110,17 @@ export function HomeScreen() {
       <HeroHeader
         label={data.greeting ?? "Hei"}
         title={firstName}
-        subtitle={heroSubtitle}
+        subtitle={data.latestLoad ? "Din treningsstatus" : "Koble Strava for å komme i gang"}
         right={<TsbGauge tsb={data.latestLoad?.tsb ?? null} />}
       />
+
+      {data.latestLoad ? (
+        <View style={styles.statRow}>
+          <StatChip label="CTL" value={data.latestLoad.ctl.toFixed(0)} tint={colors.blue} />
+          <StatChip label="ATL" value={data.latestLoad.atl.toFixed(0)} tint={colors.accent} />
+          <StatChip label="Uke" value={Math.round(data.weekTss).toString()} tint={colors.green} />
+        </View>
+      ) : null}
 
       {(weekGoal || data.raceName) && (
         <Card>
@@ -145,7 +150,7 @@ export function HomeScreen() {
       )}
 
       <Card style={styles.pmcCard}>
-        <CardHeader title="Treningsbelastning" subtitle="Performance Management Chart" />
+        <CardHeader title="Belastning" subtitle="CTL · ATL · TSB" />
         <SegmentedControl
           options={[...PMC_OPTIONS]}
           value={pmcDays}
@@ -153,7 +158,7 @@ export function HomeScreen() {
           formatLabel={(d) => `${d}d`}
         />
         {!data.pmcChart?.length ? (
-          <EmptyState text="Koble Strava på nett for å se PMC-grafen" />
+          <EmptyState text="Synk Strava for å se PMC-grafen" />
         ) : (
           <PmcChart data={data.pmcChart} />
         )}
@@ -164,7 +169,7 @@ export function HomeScreen() {
           title="Økter"
           action={
             <Pressable onPress={() => navigation.navigate("Kalender")}>
-              <Text style={styles.link}>Kalender →</Text>
+              <Text style={styles.link}>Kalender</Text>
             </Pressable>
           }
         />
@@ -172,7 +177,7 @@ export function HomeScreen() {
           <EmptyState text="Ingen økter i dag eller i morgen" />
         ) : (
           <>
-            <Text style={styles.subLabel}>Dagens økter</Text>
+            <Text style={styles.subLabel}>I dag</Text>
             {data.todayWorkouts?.length ? (
               data.todayWorkouts.map((w, i) => (
                 <RowItem
@@ -181,14 +186,13 @@ export function HomeScreen() {
                   title={SPORT_LABELS[w.sport] ?? w.sport}
                   subtitle={w.description}
                   right={`${w.durationMin}m`}
+                  divider={i < data.todayWorkouts.length - 1}
                 />
               ))
             ) : (
               <Text style={styles.emptyDay}>Ingen økter</Text>
             )}
-            <Text style={[styles.subLabel, styles.subLabelSpaced]}>
-              I morgen · {data.tomorrowLabel}
-            </Text>
+            <Text style={[styles.subLabel, styles.subLabelSpaced]}>I morgen · {data.tomorrowLabel}</Text>
             {data.tomorrowWorkouts?.length ? (
               data.tomorrowWorkouts.map((w, i) => (
                 <RowItem
@@ -197,6 +201,7 @@ export function HomeScreen() {
                   title={SPORT_LABELS[w.sport] ?? w.sport}
                   subtitle={w.description}
                   right={`${w.durationMin}m`}
+                  divider={i < data.tomorrowWorkouts.length - 1}
                 />
               ))
             ) : (
@@ -210,18 +215,19 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  statRow: { flexDirection: "row", gap: 8 },
   pmcCard: { gap: 12 },
-  goalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-  goalLabel: { color: colors.textDim, fontSize: 14 },
-  goalValue: { color: colors.text, fontSize: 16, fontWeight: "800" },
-  goalTarget: { color: colors.textDim, fontWeight: "400" },
+  goalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  goalLabel: { color: colors.textDim, fontSize: 13 },
+  goalValue: { color: colors.text, fontSize: 16, fontWeight: "700", fontVariant: ["tabular-nums"] },
+  goalTarget: { color: colors.textDim, fontWeight: "500" },
   raceRow: { flexDirection: "row", alignItems: "baseline", gap: 10 },
-  raceSpaced: { marginTop: 14 },
-  raceDays: { color: colors.accent, fontSize: 36, fontWeight: "800" },
+  raceSpaced: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.divider },
+  raceDays: { color: colors.accent, fontSize: 32, fontWeight: "800", fontVariant: ["tabular-nums"] },
   raceLabel: { color: colors.text, fontSize: 14, fontWeight: "600" },
   raceName: { color: colors.textDim, fontSize: 12, marginTop: 2 },
-  link: { color: colors.accentSoft, fontSize: 12, fontWeight: "700" },
-  subLabel: { color: colors.textDim, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 4 },
-  subLabelSpaced: { marginTop: 12 },
-  emptyDay: { color: colors.textDim, fontSize: 14, paddingVertical: 4 },
+  link: { color: colors.accentSoft, fontSize: 13, fontWeight: "600" },
+  subLabel: { ...{ fontSize: 11, fontWeight: "700", letterSpacing: 0.6, textTransform: "uppercase" as const }, color: colors.textDim },
+  subLabelSpaced: { marginTop: 8 },
+  emptyDay: { color: colors.textDim, fontSize: 13, paddingVertical: 6 },
 });

@@ -122,10 +122,12 @@ export function FriendsScreen() {
 const styles = StyleSheet.create({
   roster: { gap: 12 },
   rosterTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: -0.3,
+    color: colors.textDim,
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    paddingHorizontal: 2,
   },
   grid: {
     flexDirection: "row",

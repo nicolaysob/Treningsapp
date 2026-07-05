@@ -68,31 +68,49 @@ export function CoachScreen() {
 
           {report.metrics.length > 0 && (
             <Section title="Nøkkeltall">
-              {report.metrics.map((m) => (
-                <RowItem key={m.label} title={m.label} subtitle={m.hint} right={m.value} />
+              {report.metrics.map((m, i) => (
+                <RowItem
+                  key={m.label}
+                  title={m.label}
+                  subtitle={m.hint}
+                  right={m.value}
+                  divider={i < report.metrics.length - 1}
+                />
               ))}
             </Section>
           )}
 
           <Section title="Denne uken">
-            <RowItem title="Økter" right={String(report.weekly.sessions)} />
-            <RowItem title="Harde økter" right={String(report.weekly.hardSessions)} />
-            <RowItem title="TSS" right={String(report.weekly.totalTss)} />
+            <RowItem title="Økter" right={String(report.weekly.sessions)} divider />
+            <RowItem title="Harde økter" right={String(report.weekly.hardSessions)} divider />
+            <RowItem title="TSS" right={String(report.weekly.totalTss)} divider />
             <RowItem title="Streak" right={`${report.weekly.trainingDaysStreak} dager`} />
           </Section>
 
           {report.sports.length > 0 && (
             <Section title="Sport">
-              {report.sports.map((s) => (
-                <RowItem key={s.label} title={s.label} subtitle={`${s.sharePct}% av uken`} right={`${s.tss} TSS`} />
+              {report.sports.map((s, i) => (
+                <RowItem
+                  key={s.label}
+                  title={s.label}
+                  subtitle={`${s.sharePct}% av uken`}
+                  right={`${s.tss} TSS`}
+                  divider={i < report.sports.length - 1}
+                />
               ))}
             </Section>
           )}
 
           {report.dayPlan.length > 0 && (
             <Section title="Dagsplan">
-              {report.dayPlan.map((d) => (
-                <RowItem key={d.label} title={d.label} subtitle={d.recommendation} right={d.intensity} />
+              {report.dayPlan.map((d, i) => (
+                <RowItem
+                  key={d.label}
+                  title={d.label}
+                  subtitle={d.recommendation}
+                  right={d.intensity}
+                  divider={i < report.dayPlan.length - 1}
+                />
               ))}
             </Section>
           )}

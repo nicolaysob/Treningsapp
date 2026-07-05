@@ -225,7 +225,7 @@ export const removeFriendship = (token: string, id: string) =>
   authMutate(`/api/mobile/friends/${id}`, token, "DELETE");
 
 export const triggerSync = (token: string) =>
-  authMutate<{ ok: boolean; started: boolean }>("/api/mobile/settings/sync", token, "POST");
+  authMutate<{ ok: boolean; processed: number }>("/api/mobile/settings/sync", token, "POST");
 
 export const getStravaConnectUrl = (token: string, returnTo: string) =>
   authFetch<{ url: string; redirectUri: string }>(

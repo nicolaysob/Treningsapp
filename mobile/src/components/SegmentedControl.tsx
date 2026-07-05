@@ -1,4 +1,4 @@
-import { ScrollView, Pressable, StyleSheet, Text } from "react-native";
+import { ScrollView, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, radii } from "../theme";
 
 export function SegmentedControl<T extends string | number>({
@@ -13,34 +13,44 @@ export function SegmentedControl<T extends string | number>({
   formatLabel?: (v: T) => string;
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-      {options.map((opt) => {
-        const active = opt === value;
-        return (
-          <Pressable
-            key={String(opt)}
-            onPress={() => onChange(opt)}
-            style={[styles.chip, active && styles.chipActive]}
-          >
-            <Text style={[styles.text, active && styles.textActive]}>
-              {formatLabel ? formatLabel(opt) : String(opt)}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+    <View style={styles.track}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        {options.map((opt) => {
+          const active = opt === value;
+          return (
+            <Pressable
+              key={String(opt)}
+              onPress={() => onChange(opt)}
+              style={[styles.segment, active && styles.segmentActive]}
+            >
+              <Text style={[styles.text, active && styles.textActive]}>
+                {formatLabel ? formatLabel(opt) : String(opt)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 6 },
-  chip: {
+  track: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: 4,
+  },
+  row: { flexDirection: "row", gap: 4 },
+  segment: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: radii.pill,
-    backgroundColor: "rgba(255,255,255,0.04)",
   },
-  chipActive: { backgroundColor: colors.accent },
-  text: { color: colors.textDim, fontSize: 12, fontWeight: "700" },
-  textActive: { color: "#fff" },
+  segmentActive: {
+    backgroundColor: colors.accent,
+  },
+  text: { color: colors.textDim, fontSize: 12, fontWeight: "600" },
+  textActive: { color: "#fff", fontWeight: "700" },
 });

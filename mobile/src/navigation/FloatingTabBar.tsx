@@ -2,7 +2,7 @@ import { View, Pressable, Text, StyleSheet } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, radii } from "../theme";
+import { colors, radii, shadow } from "../theme";
 import type { AppTabParamList } from "../navigation/AppTabs";
 
 const TABS: Array<{
@@ -22,25 +22,26 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.island}>
         {state.routes.map((route, index) => {
           const tab = TABS.find((t) => t.name === route.name);
           const focused = state.index === index;
-          const color = focused ? colors.accent : colors.textDim;
+          const color = focused ? "#fff" : colors.textDim;
 
           return (
             <Pressable
               key={route.key}
-              style={[styles.item, focused && styles.itemActive]}
+              style={styles.item}
               onPress={() => navigation.navigate(route.name)}
             >
+              {focused ? <View style={styles.activePill} /> : null}
               <Ionicons
                 name={focused ? (tab?.iconActive ?? "ellipse") : (tab?.icon ?? "ellipse")}
-                size={22}
+                size={20}
                 color={color}
+                style={styles.icon}
               />
-              <Text style={[styles.label, focused && styles.labelActive]}>{route.name}</Text>
             </Pressable>
           );
         })}
@@ -52,42 +53,31 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 const styles = StyleSheet.create({
   wrap: {
     position: "absolute",
-    left: 16,
-    right: 16,
+    left: 20,
+    right: 20,
     bottom: 0,
   },
   island: {
     flexDirection: "row",
     backgroundColor: colors.glass,
-    borderRadius: radii.xl,
+    borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     paddingVertical: 8,
-    paddingHorizontal: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 12,
+    paddingHorizontal: 8,
+    ...shadow.float,
   },
   item: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    paddingVertical: 6,
-    borderRadius: radii.lg,
+    height: 40,
   },
-  itemActive: {
-    backgroundColor: colors.accentGlow,
+  activePill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.accent,
+    borderRadius: radii.pill,
+    margin: 2,
   },
-  label: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: colors.textDim,
-    letterSpacing: 0.2,
-  },
-  labelActive: {
-    color: colors.accent,
-  },
+  icon: { zIndex: 1 },
 });

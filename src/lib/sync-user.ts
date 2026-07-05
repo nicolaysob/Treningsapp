@@ -20,4 +20,6 @@ export async function syncUserFully(userId: string, options?: { full?: boolean }
 
   // Incremental (max 15/run) — must keep running even when Strava returns no new activities.
   await syncActivityZones(userId);
+
+  return { processed };
 }

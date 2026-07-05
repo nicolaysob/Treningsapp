@@ -34,38 +34,40 @@ export function TsbGauge({ tsb }: { tsb: number | null }) {
   const status = tsbColor(tsb);
   const { stroke, label } = STATUS[status];
   const progress = tsbToProgress(tsb);
-  const r = 42;
+  const size = 84;
+  const center = size / 2;
+  const r = 32;
   const circumference = 2 * Math.PI * r;
-  const arcLength = circumference * 0.75;
+  const arcLength = circumference * 0.72;
   const dashOffset = circumference - (progress / 100) * arcLength;
 
   return (
     <View style={styles.wrap}>
-      <Svg width={112} height={112} style={styles.svg}>
+      <Svg width={size} height={size} style={styles.svg}>
         <Circle
-          cx={56}
-          cy={56}
+          cx={center}
+          cy={center}
           r={r}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth={8}
+          stroke="rgba(255,255,255,0.06)"
+          strokeWidth={6}
           strokeLinecap="round"
           strokeDasharray={`${arcLength} ${circumference}`}
-          rotation={-135}
-          origin="56, 56"
+          rotation={-126}
+          origin={`${center}, ${center}`}
         />
         <Circle
-          cx={56}
-          cy={56}
+          cx={center}
+          cy={center}
           r={r}
           fill="none"
           stroke={stroke}
-          strokeWidth={8}
+          strokeWidth={6}
           strokeLinecap="round"
           strokeDasharray={`${arcLength} ${circumference}`}
           strokeDashoffset={dashOffset}
-          rotation={-135}
-          origin="56, 56"
+          rotation={-126}
+          origin={`${center}, ${center}`}
         />
       </Svg>
       <View style={styles.center}>
@@ -78,8 +80,8 @@ export function TsbGauge({ tsb }: { tsb: number | null }) {
 
 const styles = StyleSheet.create({
   wrap: {
-    width: 112,
-    height: 112,
+    width: 84,
+    height: 84,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -90,28 +92,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   value: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "800",
+    fontVariant: ["tabular-nums"],
   },
   label: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
     color: colors.textDim,
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginTop: 2,
+    letterSpacing: 0.8,
+    marginTop: 1,
   },
   emptyValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
     color: colors.textDim,
   },
   emptyLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "700",
     color: colors.textDim,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     marginTop: 2,
   },
 });

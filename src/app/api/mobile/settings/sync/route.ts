@@ -1,5 +1,6 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getUserIdFromBearer } from "@/lib/auth-mobile";
+import { prisma } from "@/lib/db";
 import { syncUserFully } from "@/lib/sync-user";
 
 export async function POST(request: Request) {
@@ -8,13 +9,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  after(async () => {
-    try {
-      await syncUserFully(userId);
-    } catch (err) {
-      console.error("Background mobile sync failed", err);
-    }
+  const stravaAccount = await prisma.account.findFirst({
+    where: { userId, provider: "strava" },
+    select: { id: true },
   });
 
-  return NextResponse.json({ ok: true, started: true });
+  if (!stravaAccount) {
+    return NextResponse.json({ error: "Strava er ikke koblet til" }, { status: 400 });
+  }
+
+  try {
+    const { processed } = await syncUserFully(userId);
+    return NextResponse.json({ ok: true, processed });
+  } catch (err) {
+    console.error("Mobile sync failed", err);
+    const message = err instanceof Error ? err.message : "Synk feilet";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

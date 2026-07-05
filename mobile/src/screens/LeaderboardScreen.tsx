@@ -124,20 +124,20 @@ export function LeaderboardScreen() {
 
 const styles = StyleSheet.create({
   card: { gap: 0, padding: 0, overflow: "hidden" },
-  sortRow: { padding: 8, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.05)" },
-  table: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.05)" },
+  sortRow: { padding: 10, borderTopWidth: 1, borderTopColor: colors.divider },
+  table: { borderTopWidth: 1, borderTopColor: colors.divider },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 13,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.04)",
+    borderBottomColor: colors.divider,
   },
-  rowMe: { backgroundColor: "rgba(255,107,43,0.08)" },
-  rank: { width: 20, textAlign: "center", color: colors.textDim, fontSize: 13, fontWeight: "800" },
-  name: { flex: 1, color: colors.text, fontSize: 14, fontWeight: "700" },
+  rowMe: { backgroundColor: colors.accentSubtle },
+  rank: { width: 20, textAlign: "center", color: colors.textDim, fontSize: 13, fontWeight: "700", fontVariant: ["tabular-nums"] },
+  name: { flex: 1, color: colors.text, fontSize: 14, fontWeight: "600" },
   nameMe: { color: colors.accentSoft },
-  value: { color: colors.textMuted, fontSize: 14, fontWeight: "800" },
+  value: { color: colors.textMuted, fontSize: 14, fontWeight: "700", fontVariant: ["tabular-nums"] },
 });

@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { UserAvatar } from "../UserAvatar";
-import { colors, radii } from "../../theme";
+import { colors, radii, shadow } from "../../theme";
 
 export function AccountCard({
   name,
@@ -19,30 +18,14 @@ export function AccountCard({
   const display = name ?? username ?? "Bruker";
 
   return (
-    <LinearGradient
-      colors={["#14121a", "#0c0c0f", "#08080a"]}
-      style={styles.card}
-    >
-      <View style={styles.glow} />
-      <View style={styles.row}>
-        <UserAvatar name={name} username={username} image={image} size="lg" highlight />
-        <View style={styles.body}>
-          <Text style={styles.name} numberOfLines={1}>{display}</Text>
-          {username ? <Text style={styles.handle}>@{username}</Text> : null}
-          <View style={styles.badge}>
-            <Ionicons name="shield-checkmark" size={12} color={colors.green} />
-            <Text style={styles.badgeText}>Verifisert konto</Text>
-          </View>
-        </View>
+    <Pressable style={styles.card} onPress={onEdit} disabled={!onEdit}>
+      <UserAvatar name={name} username={username} image={image} size="lg" highlight />
+      <View style={styles.body}>
+        <Text style={styles.name} numberOfLines={1}>{display}</Text>
+        {username ? <Text style={styles.handle}>@{username}</Text> : null}
       </View>
-      {onEdit ? (
-        <Pressable style={styles.editBtn} onPress={onEdit}>
-          <Ionicons name="create-outline" size={16} color={colors.accentSoft} />
-          <Text style={styles.editText}>Rediger profil</Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.textDim} />
-        </Pressable>
-      ) : null}
-    </LinearGradient>
+      {onEdit ? <Ionicons name="chevron-forward" size={16} color={colors.textDim} /> : null}
+    </Pressable>
   );
 }
 
@@ -64,7 +47,7 @@ export function SettingsLinkRow({
   const content = (
     <View style={[styles.row, danger && styles.rowDanger]}>
       <View style={[styles.iconWrap, danger && styles.iconDanger]}>
-        <Ionicons name={icon} size={18} color={danger ? colors.error : colors.accentSoft} />
+        <Ionicons name={icon} size={16} color={danger ? colors.error : colors.accentSoft} />
       </View>
       <View style={styles.rowBody}>
         <Text style={[styles.rowTitle, danger && styles.rowTitleDanger]}>{title}</Text>
@@ -73,7 +56,7 @@ export function SettingsLinkRow({
       {right ? (
         <Text style={styles.rowRight}>{right}</Text>
       ) : onPress ? (
-        <Ionicons name="chevron-forward" size={16} color={colors.textDim} />
+        <Ionicons name="chevron-forward" size={14} color={colors.textDim} />
       ) : null}
     </View>
   );
@@ -101,40 +84,19 @@ export function SettingsSection({
 
 const styles = StyleSheet.create({
   card: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    padding: 18,
-    overflow: "hidden",
-    gap: 14,
+    backgroundColor: colors.surfaceRaised,
+    padding: 16,
+    ...shadow.card,
   },
-  glow: {
-    position: "absolute",
-    top: -30,
-    right: -20,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255,107,43,0.08)",
-  },
-  row: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 14, paddingVertical: 14 },
   body: { flex: 1, minWidth: 0 },
-  name: { color: colors.text, fontSize: 20, fontWeight: "800" },
-  handle: { color: colors.textDim, fontSize: 14, marginTop: 2 },
-  badge: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 },
-  badgeText: { color: colors.green, fontSize: 11, fontWeight: "700" },
-  editBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255,255,255,0.04)",
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  editText: { flex: 1, color: colors.accentSoft, fontSize: 14, fontWeight: "700" },
+  name: { color: colors.text, fontSize: 18, fontWeight: "700", letterSpacing: -0.2 },
+  handle: { color: colors.textDim, fontSize: 13, marginTop: 2 },
 
   section: { gap: 8 },
   sectionTitle: {
@@ -142,29 +104,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
-    paddingHorizontal: 4,
+    letterSpacing: 0.6,
+    paddingHorizontal: 2,
   },
   sectionCard: {
-    backgroundColor: colors.card,
-    borderRadius: radii.lg,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     overflow: "hidden",
+    ...shadow.card,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     borderRadius: 10,
-    backgroundColor: "rgba(255,107,43,0.1)",
+    backgroundColor: colors.accentSubtle,
     alignItems: "center",
     justifyContent: "center",
   },
   iconDanger: { backgroundColor: "rgba(248,113,113,0.1)" },
   rowBody: { flex: 1, minWidth: 0 },
-  rowTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  rowTitle: { color: colors.text, fontSize: 15, fontWeight: "600" },
   rowTitleDanger: { color: colors.error },
   rowSub: { color: colors.textDim, fontSize: 12, marginTop: 2 },
-  rowRight: { color: colors.textMuted, fontSize: 13, fontWeight: "700" },
+  rowRight: { color: colors.textMuted, fontSize: 13, fontWeight: "600", fontVariant: ["tabular-nums"] },
   rowDanger: {},
 });

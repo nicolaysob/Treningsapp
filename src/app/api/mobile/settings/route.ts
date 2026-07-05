@@ -2,7 +2,6 @@ import { after, NextResponse } from "next/server";
 import { getUserIdFromBearer } from "@/lib/auth-mobile";
 import { prisma } from "@/lib/db";
 import { getThresholdSetup } from "@/lib/training-load/threshold-setup";
-import { syncUserFully } from "@/lib/sync-user";
 
 export async function GET(request: Request) {
   const userId = await getUserIdFromBearer(request);

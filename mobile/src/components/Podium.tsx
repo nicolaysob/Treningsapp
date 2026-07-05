@@ -62,17 +62,17 @@ export function Podium({
 }
 
 const BAR_STYLES = [
-  { backgroundColor: "rgba(161,161,170,0.15)", borderColor: "rgba(161,161,170,0.2)" },
-  { backgroundColor: "rgba(251,191,36,0.2)", borderColor: "rgba(251,191,36,0.25)" },
-  { backgroundColor: "rgba(180,140,100,0.12)", borderColor: "rgba(180,140,100,0.2)" },
+  { backgroundColor: "rgba(148,163,184,0.12)", borderColor: "rgba(148,163,184,0.18)" },
+  { backgroundColor: "rgba(251,191,36,0.15)", borderColor: "rgba(251,191,36,0.22)" },
+  { backgroundColor: "rgba(180,140,100,0.1)", borderColor: "rgba(180,140,100,0.16)" },
 ];
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: "row", justifyContent: "center", alignItems: "flex-end", gap: 12, paddingVertical: 16 },
-  slot: { width: 88, alignItems: "center", gap: 6 },
-  medal: { fontSize: 20 },
-  name: { color: colors.textMuted, fontSize: 11, fontWeight: "700", maxWidth: 80, textAlign: "center" },
+  wrap: { flexDirection: "row", justifyContent: "center", alignItems: "flex-end", gap: 10, paddingVertical: 18, paddingHorizontal: 8 },
+  slot: { width: 84, alignItems: "center", gap: 5 },
+  medal: { fontSize: 18 },
+  name: { color: colors.textMuted, fontSize: 11, fontWeight: "600", maxWidth: 76, textAlign: "center" },
   nameMe: { color: colors.accentSoft },
-  value: { color: colors.textDim, fontSize: 10, fontWeight: "700" },
+  value: { color: colors.textDim, fontSize: 10, fontWeight: "700", fontVariant: ["tabular-nums"] },
   bar: { width: "100%", borderTopLeftRadius: 8, borderTopRightRadius: 8, borderWidth: 1, borderBottomWidth: 0 },
 });

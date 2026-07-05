@@ -64,11 +64,22 @@ export function SettingsScreen() {
   async function handleSync() {
     setSyncing(true);
     setMessage(null);
+    setError(null);
     try {
-      await triggerSync(token);
-      setMessage("Synk startet — vent 1–2 min og dra ned for å oppdatere.");
+      const result = await triggerSync(token);
+      setMessage(
+        result.processed > 0
+          ? `Synket ${result.processed} ${result.processed === 1 ? "økt" : "økter"}. Dra ned på Hjem for å oppdatere tallene.`
+          : "Ingen nye økter fra Strava — alt er allerede oppdatert.",
+      );
+      await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Synk feilet");
+      const msg = err instanceof Error ? err.message : "Synk feilet";
+      setError(
+        msg.includes("Strava") || msg.includes("koblet")
+          ? "Koble til Strava først, deretter trykk Synk."
+          : msg,
+      );
     } finally {
       setSyncing(false);
     }
@@ -243,15 +254,16 @@ export function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  divider: { height: 1, backgroundColor: colors.cardBorder, marginHorizontal: 14 },
+  divider: { height: 1, backgroundColor: colors.divider, marginHorizontal: 14 },
   syncBlock: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    padding: 14,
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   syncText: { flex: 1 },
-  syncTitle: { color: colors.text, fontSize: 15, fontWeight: "700" },
+  syncTitle: { color: colors.text, fontSize: 14, fontWeight: "600" },
   syncSub: { color: colors.textDim, fontSize: 12, marginTop: 2 },
   legalNote: { padding: 14 },
   legalNoteText: { color: colors.textDim, fontSize: 12, lineHeight: 18 },

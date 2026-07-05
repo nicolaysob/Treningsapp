@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { CalendarDay } from "../api";
 import { dayNumberFromKey } from "../lib/date";
@@ -20,6 +20,14 @@ function summarizeDay(day: CalendarDay) {
   return { done, planned: remaining.length, strava: day.activities.length - done };
 }
 
+function chunkWeeks(days: CalendarDay[]): CalendarDay[][] {
+  const weeks: CalendarDay[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
+  }
+  return weeks;
+}
+
 export function MonthGrid({
   days,
   todayKey,
@@ -30,6 +38,7 @@ export function MonthGrid({
   onChanged: () => void;
 }) {
   const [selected, setSelected] = useState<CalendarDay | null>(null);
+  const weeks = useMemo(() => chunkWeeks(days), [days]);
 
   return (
     <>
@@ -41,45 +50,50 @@ export function MonthGrid({
         ))}
       </View>
       <View style={styles.grid}>
-        {days.map((day) => {
-          const summary = summarizeDay(day);
-          const total = summary.done + summary.planned + summary.strava;
-          const isToday = day.key === todayKey;
-          const muted = !day.isCurrentMonth;
+        {weeks.map((week, weekIndex) => (
+          <View key={weekIndex} style={styles.weekRow}>
+            {week.map((day) => {
+              const summary = summarizeDay(day);
+              const total = summary.done + summary.planned + summary.strava;
+              const isToday = day.key === todayKey;
+              const muted = !day.isCurrentMonth;
 
-          return (
-            <Pressable
-              key={day.key}
-              style={[
-                styles.cell,
-                muted && styles.cellMuted,
-                isToday && styles.cellToday,
-              ]}
-              onPress={() => setSelected(day)}
-            >
-              <View style={[styles.dayNum, isToday && styles.dayNumToday]}>
-                <Text style={[styles.dayNumText, isToday && styles.dayNumTodayText]}>
-                  {dayNumberFromKey(day.key)}
-                </Text>
-              </View>
-              {total > 0 ? (
-                <View style={styles.dots}>
-                  {Array.from({ length: summary.done }).map((_, i) => (
-                    <View key={`d${i}`} style={[styles.dot, styles.dotDone]} />
-                  ))}
-                  {Array.from({ length: summary.planned }).map((_, i) => (
-                    <View key={`p${i}`} style={[styles.dot, styles.dotPlanned]} />
-                  ))}
-                  {Array.from({ length: summary.strava }).map((_, i) => (
-                    <View key={`s${i}`} style={[styles.dot, styles.dotStrava]} />
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.plus}>+</Text>
-              )}
-            </Pressable>
-          );
-        })}
+              return (
+                <Pressable
+                  key={day.key}
+                  style={[
+                    styles.cell,
+                    muted && styles.cellMuted,
+                    isToday && styles.cellToday,
+                  ]}
+                  onPress={() => setSelected(day)}
+                >
+                  <Text
+                    style={[
+                      styles.dayNumText,
+                      isToday && styles.dayNumTodayText,
+                      muted && styles.dayNumMuted,
+                    ]}
+                  >
+                    {dayNumberFromKey(day.key)}
+                  </Text>
+                  {total > 0 ? (
+                    <View style={styles.dots}>
+                      {Array.from({ length: Math.min(summary.done, 3) }).map((_, i) => (
+                        <View key={`d${i}`} style={[styles.dot, styles.dotDone]} />
+                      ))}
+                      {Array.from({ length: Math.min(summary.planned, 3) }).map((_, i) => (
+                        <View key={`p${i}`} style={[styles.dot, styles.dotPlanned]} />
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.dotsPlaceholder} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
       </View>
       {selected && (
         <DaySheet day={selected} onClose={() => setSelected(null)} onChanged={onChanged} />
@@ -89,39 +103,37 @@ export function MonthGrid({
 }
 
 const styles = StyleSheet.create({
-  weekdays: { flexDirection: "row", marginBottom: 8 },
-  weekday: { flex: 1, textAlign: "center", color: colors.textDim, fontSize: 11, fontWeight: "700" },
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  weekdays: { flexDirection: "row", gap: 4, marginBottom: 8 },
+  weekday: {
+    flex: 1,
+    textAlign: "center",
+    color: colors.textDim,
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  grid: { gap: 4 },
+  weekRow: { flexDirection: "row", gap: 4 },
   cell: {
-    width: "14.285%",
-    minHeight: 72,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: radii.sm,
-    backgroundColor: colors.card,
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
     padding: 6,
-    marginBottom: 4,
+    justifyContent: "space-between",
+    alignItems: "stretch",
   },
-  cellMuted: { backgroundColor: "rgba(255,255,255,0.02)", borderColor: "transparent" },
+  cellMuted: { opacity: 0.35 },
   cellToday: {
-    borderColor: "rgba(255,107,43,0.45)",
-    backgroundColor: "rgba(255,107,43,0.08)",
+    backgroundColor: colors.accentSubtle,
+    borderWidth: 1,
+    borderColor: "rgba(255,107,53,0.35)",
   },
-  dayNum: { alignSelf: "flex-start" },
-  dayNumText: { color: colors.textDim, fontSize: 12, fontWeight: "700" },
-  dayNumToday: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.pill,
-    width: 22,
-    height: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dayNumTodayText: { color: "#fff" },
-  dots: { flexDirection: "row", flexWrap: "wrap", gap: 3, marginTop: 4 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dayNumText: { color: colors.text, fontSize: 13, fontWeight: "600" },
+  dayNumMuted: { color: colors.textDim },
+  dayNumTodayText: { color: colors.accentSoft, fontWeight: "800" },
+  dots: { flexDirection: "row", flexWrap: "wrap", gap: 3, minHeight: 5 },
+  dotsPlaceholder: { minHeight: 5 },
+  dot: { width: 5, height: 5, borderRadius: 3 },
   dotDone: { backgroundColor: colors.green },
-  dotPlanned: { borderWidth: 1.5, borderColor: colors.accent, backgroundColor: "transparent" },
-  dotStrava: { backgroundColor: "#fc4c02" },
-  plus: { color: "rgba(255,107,43,0.5)", fontSize: 14, fontWeight: "800", marginTop: 4 },
+  dotPlanned: { backgroundColor: colors.accent },
 });

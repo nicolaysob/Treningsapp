@@ -7,9 +7,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radii } from "../../theme";
+import { colors, radii, shadow } from "../../theme";
 
 export function ChallengeArena({
   onSend,
@@ -29,20 +28,14 @@ export function ChallengeArena({
   }
 
   return (
-    <LinearGradient
-      colors={["#ff6b2b", "#e84d0e", "#7c1d06"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.wrap}
-    >
-      <View style={styles.shine} />
+    <View style={styles.wrap}>
       <View style={styles.head}>
         <View style={styles.iconWrap}>
-          <Ionicons name="flash" size={22} color="#fff" />
+          <Ionicons name="flash" size={18} color={colors.accent} />
         </View>
         <View style={styles.headText}>
           <Text style={styles.kicker}>Ukentlig duell</Text>
-          <Text style={styles.headline}>Hvem er neste?</Text>
+          <Text style={styles.headline}>Inviter en rival</Text>
         </View>
       </View>
 
@@ -51,8 +44,8 @@ export function ChallengeArena({
         <TextInput
           value={username}
           onChangeText={setUsername}
-          placeholder="skriv brukernavn"
-          placeholderTextColor="rgba(255,255,255,0.45)"
+          placeholder="brukernavn"
+          placeholderTextColor={colors.textDim}
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.input}
@@ -61,7 +54,7 @@ export function ChallengeArena({
           onBlur={() => setFocused(false)}
           onSubmitEditing={() => void handleSend()}
         />
-        <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
+        <Ionicons name="search" size={16} color={colors.textDim} />
       </View>
 
       <Pressable
@@ -70,77 +63,63 @@ export function ChallengeArena({
         disabled={!username.trim() || sending}
       >
         {sending ? (
-          <ActivityIndicator color="#7c1d06" />
+          <ActivityIndicator color="#fff" />
         ) : (
-          <>
-            <Text style={styles.ctaText}>SEND UTFORDRING</Text>
-            <Ionicons name="arrow-forward" size={18} color="#7c1d06" />
-          </>
+          <Text style={styles.ctaText}>Send utfordring</Text>
         )}
       </Pressable>
-
-      <Text style={styles.hint}>De dukker opp i Duell-fanen når de sier ja</Text>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
     borderRadius: radii.xl,
-    padding: 18,
-    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,53,0.2)",
+    backgroundColor: colors.surfaceRaised,
+    padding: 16,
     gap: 12,
-  },
-  shine: {
-    position: "absolute",
-    top: -40,
-    right: -20,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    ...shadow.card,
   },
   head: { flexDirection: "row", alignItems: "center", gap: 12 },
   iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "rgba(0,0,0,0.2)",
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: colors.accentSubtle,
     alignItems: "center",
     justifyContent: "center",
   },
   headText: { flex: 1 },
   kicker: {
-    color: "rgba(255,255,255,0.75)",
+    color: colors.accentSoft,
     fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.2,
+    fontWeight: "700",
+    letterSpacing: 0.6,
     textTransform: "uppercase",
   },
-  headline: { color: "#fff", fontSize: 24, fontWeight: "900", marginTop: 2 },
+  headline: { color: colors.text, fontSize: 18, fontWeight: "700", marginTop: 2 },
   field: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.22)",
+    backgroundColor: colors.surface,
     borderRadius: radii.md,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.15)",
-    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: 12,
     gap: 6,
   },
-  fieldFocused: { borderColor: "rgba(255,255,255,0.55)" },
-  at: { color: "#fff", fontSize: 18, fontWeight: "900" },
-  input: { flex: 1, color: "#fff", fontSize: 17, fontWeight: "600", paddingVertical: 14 },
+  fieldFocused: { borderColor: "rgba(255,107,53,0.4)" },
+  at: { color: colors.textDim, fontSize: 16, fontWeight: "700" },
+  input: { flex: 1, color: colors.text, fontSize: 16, fontWeight: "500", paddingVertical: 12 },
   cta: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#fff",
+    backgroundColor: colors.accent,
     borderRadius: radii.md,
-    paddingVertical: 15,
+    paddingVertical: 13,
   },
-  ctaDisabled: { opacity: 0.5 },
-  ctaText: { color: "#7c1d06", fontSize: 14, fontWeight: "900", letterSpacing: 0.8 },
-  hint: { color: "rgba(255,255,255,0.65)", fontSize: 11, textAlign: "center", fontWeight: "600" },
+  ctaDisabled: { opacity: 0.45 },
+  ctaText: { color: "#fff", fontSize: 14, fontWeight: "700" },
 });
