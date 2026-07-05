@@ -227,8 +227,11 @@ export const removeFriendship = (token: string, id: string) =>
 export const triggerSync = (token: string) =>
   authMutate<{ ok: boolean; started: boolean }>("/api/mobile/settings/sync", token, "POST");
 
-export const getStravaConnectUrl = (token: string) =>
-  authFetch<{ url: string; redirectUri: string }>("/api/mobile/strava/connect", token);
+export const getStravaConnectUrl = (token: string, returnTo: string) =>
+  authFetch<{ url: string; redirectUri: string }>(
+    `/api/mobile/strava/connect?returnTo=${encodeURIComponent(returnTo)}`,
+    token,
+  );
 
 export const completeStravaConnect = (token: string, code: string) =>
   authMutate<{ ok: boolean }>("/api/mobile/strava/callback", token, "POST", { code });

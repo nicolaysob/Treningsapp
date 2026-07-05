@@ -85,7 +85,7 @@ export function mobileStravaRedirectUri(origin: string): string {
   return new URL("/api/mobile/strava/oauth-redirect", origin).toString();
 }
 
-export function buildStravaAuthorizeUrl(redirectUri: string): string {
+export function buildStravaAuthorizeUrl(redirectUri: string, state?: string): string {
   const params = new URLSearchParams({
     client_id: process.env.AUTH_STRAVA_ID ?? "",
     redirect_uri: redirectUri,
@@ -93,5 +93,15 @@ export function buildStravaAuthorizeUrl(redirectUri: string): string {
     approval_prompt: "auto",
     scope: "read,activity:read_all",
   });
+  if (state) params.set("state", state);
   return `https://www.strava.com/oauth/authorize?${params.toString()}`;
+}
+
+export function isAllowedMobileReturnTo(returnTo: string): boolean {
+  return returnTo.startsWith("exp://") || returnTo.startsWith("treningsapp://");
+}
+
+export function appendQueryParam(url: string, key: string, value: string): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}${key}=${encodeURIComponent(value)}`;
 }

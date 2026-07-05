@@ -7,8 +7,8 @@ WebBrowser.maybeCompleteAuthSession();
 const CALLBACK_PATH = "strava/callback";
 
 export async function connectStravaInApp(token: string): Promise<void> {
-  const { url } = await getStravaConnectUrl(token);
   const returnUrl = Linking.createURL(CALLBACK_PATH);
+  const { url } = await getStravaConnectUrl(token, returnUrl);
   const result = await WebBrowser.openAuthSessionAsync(url, returnUrl);
 
   if (result.type !== "success" || !result.url) {
