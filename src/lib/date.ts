@@ -1,16 +1,34 @@
-export function startOfIsoWeek(date: Date): Date {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const day = d.getUTCDay();
-  const diff = (day === 0 ? -6 : 1) - day;
+export const APP_TIMEZONE = "Europe/Oslo";
+
+export function osloWeekday(date: Date): number {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIMEZONE,
+    weekday: "short",
+  }).format(date);
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  return map[weekday] ?? 0;
+}
+
+export function startOfIsoWeek(date: Date = new Date()): Date {
+  const d = parseCalendarDateKey(osloDateKey(date));
+  const day = osloWeekday(d);
+  const diff = day === 0 ? -6 : 1 - day;
   d.setUTCDate(d.getUTCDate() + diff);
   return d;
 }
 
+/** Calendar day key (YYYY-MM-DD) in Europe/Oslo — used for TSS bucketing and UI. */
 export function toDateKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  return osloDateKey(date);
 }
-
-export const APP_TIMEZONE = "Europe/Oslo";
 
 /** Calendar day key (YYYY-MM-DD) in the app's local timezone (Oslo). */
 export function osloDateKey(date: Date = new Date()): string {
@@ -36,6 +54,12 @@ export function osloMonthStart(date: Date = new Date()): Date {
 /** Parse YYYY-MM-DD from calendar grid as UTC noon (avoids timezone day-shift). */
 export function parseCalendarDateKey(key: string): Date {
   return new Date(`${key}T12:00:00.000Z`);
+}
+
+export function addDaysToKey(key: string, days: number): string {
+  const d = parseCalendarDateKey(key);
+  d.setUTCDate(d.getUTCDate() + days);
+  return osloDateKey(d);
 }
 
 /** Safe for cached/JSON data where dates may arrive as strings. */

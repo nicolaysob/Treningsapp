@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { parseCalendarDateKey } from "@/lib/date";
 import { buildDailyLoadSeries } from "@/lib/training-load/batch";
 
 function utcDay(isoDate: string): Date {
-  return new Date(`${isoDate}T00:00:00.000Z`);
+  return parseCalendarDateKey(isoDate);
 }
 
 describe("buildDailyLoadSeries", () => {

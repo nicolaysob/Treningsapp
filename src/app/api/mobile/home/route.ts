@@ -1,28 +1,11 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromBearer } from "@/lib/auth-mobile";
 import { prisma } from "@/lib/db";
-import { startOfIsoWeek, toDateKey, parseCalendarDateKey, formatDateNb, osloDateKey, osloDayStart } from "@/lib/date";
+import { startOfIsoWeek, toDateKey, parseCalendarDateKey, formatDateNb, osloDateKey, osloDayStart, addDaysToKey, osloWeekday } from "@/lib/date";
 import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
 
 const PMC_OPTIONS = [30, 90, 180, 365];
 const DEFAULT_PMC_DAYS = 90;
-
-function getOsloWeekday(): number {
-  const weekday = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Oslo",
-    weekday: "short",
-  }).format(new Date());
-  const map: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
-  return map[weekday] ?? 0;
-}
 
 function getWeekdayGreeting(): string {
   const greetings = [
@@ -34,7 +17,7 @@ function getWeekdayGreeting(): string {
     "God fredag",
     "God lørdag",
   ];
-  return greetings[getOsloWeekday()];
+  return greetings[osloWeekday(new Date())];
 }
 
 export async function GET(request: Request) {
@@ -44,13 +27,10 @@ export async function GET(request: Request) {
   }
 
   const todayStart = osloDayStart();
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
-  const dayAfterTomorrow = new Date(tomorrowStart);
-  dayAfterTomorrow.setUTCDate(dayAfterTomorrow.getUTCDate() + 1);
-
   const todayKey = osloDateKey();
-  const tomorrowKey = toDateKey(tomorrowStart);
+  const tomorrowKey = addDaysToKey(todayKey, 1);
+  const dayAfterTomorrowKey = addDaysToKey(todayKey, 2);
+  const tomorrowStart = parseCalendarDateKey(tomorrowKey);
 
   const url = new URL(request.url);
   const daysParam = Number(url.searchParams.get("days"));
@@ -87,7 +67,7 @@ export async function GET(request: Request) {
         userId,
         date: {
           gte: parseCalendarDateKey(todayKey),
-          lt: parseCalendarDateKey(toDateKey(dayAfterTomorrow)),
+          lt: parseCalendarDateKey(dayAfterTomorrowKey),
         },
       },
       orderBy: { date: "asc" },

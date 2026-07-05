@@ -3,7 +3,7 @@ import type { PlannedWorkout } from "@prisma/client";
 import { requireUserId } from "@/lib/auth-session";
 import { prisma } from "@/lib/db";
 import { deletePlannedWorkout } from "@/app/(app)/calendar/actions";
-import { startOfIsoWeek, formatDateNb, toDateKey, parseCalendarDateKey } from "@/lib/date";
+import { startOfIsoWeek, formatDateNb, toDateKey, parseCalendarDateKey, osloDayStart, addDaysToKey, osloDateKey } from "@/lib/date";
 import { getThresholdSetup } from "@/lib/training-load/threshold-setup";
 import { PmcChartLazy } from "@/components/pmc/PmcChartLazy";
 import { TsbGauge } from "@/components/pmc/TsbGauge";
@@ -33,10 +33,6 @@ const SPORT_ICONS: Record<string, string> = {
 
 const PERIOD_OPTIONS = [30, 90, 180, 365];
 const DEFAULT_DAYS = 90;
-
-function utcDayStart(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
 
 function PlannedWorkoutRows({ workouts }: { workouts: PlannedWorkout[] }) {
   if (workouts.length === 0) {
@@ -103,20 +99,15 @@ export default async function Home({
   const { days: daysParam, saved } = await searchParams;
   const days = PERIOD_OPTIONS.includes(Number(daysParam)) ? Number(daysParam) : DEFAULT_DAYS;
 
-  const since = new Date();
+  const since = osloDayStart();
   since.setUTCDate(since.getUTCDate() - days);
-  since.setUTCHours(0, 0, 0, 0);
 
-  const todayStart = utcDayStart(new Date());
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
-  const dayAfterTomorrow = new Date(tomorrowStart);
-  dayAfterTomorrow.setUTCDate(dayAfterTomorrow.getUTCDate() + 1);
+  const todayKey = osloDateKey();
+  const tomorrowKey = addDaysToKey(todayKey, 1);
+  const dayAfterTomorrowKey = addDaysToKey(todayKey, 2);
+  const tomorrowStart = parseCalendarDateKey(tomorrowKey);
 
-  const todayKey = toDateKey(todayStart);
-  const tomorrowKey = toDateKey(tomorrowStart);
-
-  const weekStart = startOfIsoWeek(new Date());
+  const weekStart = startOfIsoWeek();
   const weekEnd = new Date(weekStart);
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
 
@@ -136,7 +127,7 @@ export default async function Home({
         userId,
         date: {
           gte: parseCalendarDateKey(todayKey),
-          lt: parseCalendarDateKey(toDateKey(dayAfterTomorrow)),
+          lt: parseCalendarDateKey(dayAfterTomorrowKey),
         },
       },
       orderBy: { date: "asc" },

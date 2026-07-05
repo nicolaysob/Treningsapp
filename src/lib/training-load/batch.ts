@@ -1,16 +1,14 @@
 import { prisma } from "@/lib/db";
+import {
+  addDaysToKey,
+  osloDayStart,
+  parseCalendarDateKey,
+  toDateKey,
+} from "@/lib/date";
 import { computeActivityTss } from "./tss";
 import { nextAtl, nextCtl, tsb } from "./pmc";
 
 const ACTIVITY_UPDATE_CHUNK = 25;
-
-function toDateKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function startOfUtcDay(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
 
 export function buildDailyLoadSeries(
   dailyTssByKey: Map<string, number>,
@@ -33,16 +31,18 @@ export function buildDailyLoadSeries(
     tsb: number;
   }> = [];
 
-  const cursor = new Date(firstDay);
-  while (cursor.getTime() <= today.getTime()) {
-    const dailyTss = dailyTssByKey.get(toDateKey(cursor)) ?? 0;
+  let cursorKey = toDateKey(firstDay);
+  const endKey = toDateKey(today);
+
+  while (cursorKey <= endKey) {
+    const dailyTss = dailyTssByKey.get(cursorKey) ?? 0;
 
     const ctl = nextCtl(prevCtl, dailyTss);
     const atl = nextAtl(prevAtl, dailyTss);
     const tsbValue = tsb(prevCtl, prevAtl);
 
     dailyLoads.push({
-      date: new Date(cursor),
+      date: parseCalendarDateKey(cursorKey),
       dailyTss,
       ctl,
       atl,
@@ -51,7 +51,8 @@ export function buildDailyLoadSeries(
 
     prevCtl = ctl;
     prevAtl = atl;
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    if (cursorKey === endKey) break;
+    cursorKey = addDaysToKey(cursorKey, 1);
   }
 
   return dailyLoads;
@@ -108,8 +109,8 @@ export async function recomputeDailyLoad(userId: string): Promise<void> {
     }
   }
 
-  const firstDay = startOfUtcDay(activities[0].date);
-  const today = startOfUtcDay(new Date());
+  const firstDay = osloDayStart(activities[0].date);
+  const today = osloDayStart();
   const dailyLoads = buildDailyLoadSeries(dailyTssByKey, firstDay, today).map((row) => ({
     userId,
     ...row,
