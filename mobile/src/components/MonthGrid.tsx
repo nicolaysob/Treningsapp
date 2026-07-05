@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { CalendarDay } from "../api";
+import { dayNumberFromKey } from "../lib/date";
 import { colors, radii } from "../theme";
 import { DaySheet } from "./DaySheet";
 
@@ -58,7 +59,7 @@ export function MonthGrid({
             >
               <View style={[styles.dayNum, isToday && styles.dayNumToday]}>
                 <Text style={[styles.dayNumText, isToday && styles.dayNumTodayText]}>
-                  {new Date(day.date).getUTCDate()}
+                  {dayNumberFromKey(day.key)}
                 </Text>
               </View>
               {total > 0 ? (

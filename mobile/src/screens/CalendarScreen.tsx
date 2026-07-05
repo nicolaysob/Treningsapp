@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { fetchCalendar, type CalendarData } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { MonthGrid } from "../components/MonthGrid";
+import { osloDateKey, formatKeyNb } from "../lib/date";
 import {
   Card,
   ErrorText,
@@ -42,12 +43,13 @@ export function CalendarScreen() {
 
   if (loading && !data) return <LoadingScreen />;
 
-  const monthDate = data?.monthStart ? new Date(data.monthStart) : new Date();
+  const monthDate = data?.monthStart ? new Date(data.monthStart + "T12:00:00.000Z") : new Date();
   const monthLabel = `${MONTH_NAMES[monthDate.getUTCMonth()]} ${monthDate.getUTCFullYear()}`;
+  const todayKey = osloDateKey();
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void (setRefreshing(true), load().finally(() => setRefreshing(false)))}>
-      <HeroHeader title="Kalender" subtitle="Trykk på en dag for å se økter og planlegge" />
+      <HeroHeader title="Kalender" subtitle={`I dag: ${formatKeyNb(todayKey)}`} />
 
       {data && (
         <MonthNav
@@ -66,7 +68,7 @@ export function CalendarScreen() {
           <Legend color="#fc4c02" label="Strava" hollow={false} />
         </View>
         {data && (
-          <MonthGrid days={data.days} todayKey={data.todayKey} onChanged={() => void load()} />
+          <MonthGrid days={data.days} todayKey={todayKey} onChanged={() => void load()} />
         )}
       </Card>
     </Screen>

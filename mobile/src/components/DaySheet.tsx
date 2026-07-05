@@ -11,6 +11,7 @@ import type { CalendarDay } from "../api";
 import { createPlannedWorkout, deletePlannedWorkout } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { Button, Chip, Input } from "./ui";
+import { formatKeyNbWeekday } from "../lib/date";
 import { colors, radii, spacing } from "../theme";
 
 const SPORT_LABELS: Record<string, string> = {
@@ -62,11 +63,7 @@ export function DaySheet({
     onClose();
   }
 
-  const dateLabel = new Date(day.date).toLocaleDateString("nb-NO", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const dateLabel = formatKeyNbWeekday(day.key);
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromBearer } from "@/lib/auth-mobile";
 import { prisma } from "@/lib/db";
-import { startOfMonth, getMonthGridDays, toDateKey } from "@/lib/date";
+import { startOfMonth, getMonthGridDays, toDateKey, osloDateKey, osloMonthStart } from "@/lib/date";
 
 export async function GET(request: Request) {
   const userId = await getUserIdFromBearer(request);
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const monthParam = url.searchParams.get("month");
-  const monthStart = monthParam ? startOfMonth(new Date(monthParam)) : startOfMonth(new Date());
+  const monthStart = monthParam ? startOfMonth(new Date(monthParam)) : osloMonthStart();
 
   const gridDays = getMonthGridDays(monthStart);
   const gridStart = gridDays[0];
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     monthStart: toDateKey(monthStart),
     monthLabel: `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, "0")}`,
-    todayKey: toDateKey(new Date()),
+    todayKey: osloDateKey(),
     prevMonth: toDateKey(prevMonth),
     nextMonth: toDateKey(nextMonth),
     days,

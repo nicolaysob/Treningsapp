@@ -2,8 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
-import { fetchHome, type HomeData } from "../api";
+import { fetchCalendar, fetchHome, type CalendarData, type HomeData } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { addDaysToKey, formatKeyNbShort, osloDateKey } from "../lib/date";
 import { PmcChart } from "../components/PmcChart";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { TsbGauge } from "../components/TsbGauge";
@@ -39,6 +40,27 @@ const SPORT_ICONS: Record<string, string> = {
   OTHER: "⚡",
 };
 
+function applyOsloWorkouts(home: HomeData, calendar: CalendarData): HomeData {
+  const todayKey = osloDateKey();
+  const tomorrowKey = addDaysToKey(todayKey, 1);
+  const todayDay = calendar.days.find((d) => d.key === todayKey);
+  const tomorrowDay = calendar.days.find((d) => d.key === tomorrowKey);
+
+  const mapPlanned = (day: CalendarData["days"][number] | undefined) =>
+    day?.planned.map((p) => ({
+      sport: p.sport,
+      description: p.description,
+      durationMin: p.durationMin,
+    })) ?? [];
+
+  return {
+    ...home,
+    todayWorkouts: mapPlanned(todayDay),
+    tomorrowWorkouts: mapPlanned(tomorrowDay),
+    tomorrowLabel: formatKeyNbShort(tomorrowKey),
+  };
+}
+
 export function HomeScreen() {
   const { token } = useAuth();
   const navigation = useNavigation<BottomTabNavigationProp<AppTabParamList>>();
@@ -51,7 +73,11 @@ export function HomeScreen() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      setData(await fetchHome(token, pmcDays));
+      const [home, calendar] = await Promise.all([
+        fetchHome(token, pmcDays),
+        fetchCalendar(token),
+      ]);
+      setData(applyOsloWorkouts(home, calendar));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Kunne ikke hente data");
     }
@@ -142,34 +168,42 @@ export function HomeScreen() {
             </Pressable>
           }
         />
-        {data.todayWorkouts?.length ? (
-          data.todayWorkouts.map((w, i) => (
-            <RowItem
-              key={`t-${i}`}
-              icon={SPORT_ICONS[w.sport] ?? "⚡"}
-              title={SPORT_LABELS[w.sport] ?? w.sport}
-              subtitle={w.description}
-              right={`${w.durationMin}m`}
-            />
-          ))
-        ) : null}
-        {data.tomorrowWorkouts?.length ? (
-          <>
-            <Text style={styles.subLabel}>I morgen · {data.tomorrowLabel}</Text>
-            {data.tomorrowWorkouts.map((w, i) => (
-              <RowItem
-                key={`m-${i}`}
-                icon={SPORT_ICONS[w.sport] ?? "⚡"}
-                title={SPORT_LABELS[w.sport] ?? w.sport}
-                subtitle={w.description}
-                right={`${w.durationMin}m`}
-              />
-            ))}
-          </>
-        ) : null}
         {!data.todayWorkouts?.length && !data.tomorrowWorkouts?.length ? (
           <EmptyState text="Ingen økter i dag eller i morgen" />
-        ) : null}
+        ) : (
+          <>
+            <Text style={styles.subLabel}>Dagens økter</Text>
+            {data.todayWorkouts?.length ? (
+              data.todayWorkouts.map((w, i) => (
+                <RowItem
+                  key={`t-${i}`}
+                  icon={SPORT_ICONS[w.sport] ?? "⚡"}
+                  title={SPORT_LABELS[w.sport] ?? w.sport}
+                  subtitle={w.description}
+                  right={`${w.durationMin}m`}
+                />
+              ))
+            ) : (
+              <Text style={styles.emptyDay}>Ingen økter</Text>
+            )}
+            <Text style={[styles.subLabel, styles.subLabelSpaced]}>
+              I morgen · {data.tomorrowLabel}
+            </Text>
+            {data.tomorrowWorkouts?.length ? (
+              data.tomorrowWorkouts.map((w, i) => (
+                <RowItem
+                  key={`m-${i}`}
+                  icon={SPORT_ICONS[w.sport] ?? "⚡"}
+                  title={SPORT_LABELS[w.sport] ?? w.sport}
+                  subtitle={w.description}
+                  right={`${w.durationMin}m`}
+                />
+              ))
+            ) : (
+              <Text style={styles.emptyDay}>Ingen økter</Text>
+            )}
+          </>
+        )}
       </Card>
     </Screen>
   );
@@ -188,4 +222,6 @@ const styles = StyleSheet.create({
   raceName: { color: colors.textDim, fontSize: 12, marginTop: 2 },
   link: { color: colors.accentSoft, fontSize: 12, fontWeight: "700" },
   subLabel: { color: colors.textDim, fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 4 },
+  subLabelSpaced: { marginTop: 12 },
+  emptyDay: { color: colors.textDim, fontSize: 14, paddingVertical: 4 },
 });

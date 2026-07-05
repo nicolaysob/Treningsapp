@@ -10,6 +10,29 @@ export function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+export const APP_TIMEZONE = "Europe/Oslo";
+
+/** Calendar day key (YYYY-MM-DD) in the app's local timezone (Oslo). */
+export function osloDateKey(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+/** UTC noon for a calendar key — safe for DB date comparisons. */
+export function osloDayStart(date: Date = new Date()): Date {
+  return parseCalendarDateKey(osloDateKey(date));
+}
+
+export function osloMonthStart(date: Date = new Date()): Date {
+  const key = osloDateKey(date);
+  const [year, month] = key.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, 1));
+}
+
 /** Parse YYYY-MM-DD from calendar grid as UTC noon (avoids timezone day-shift). */
 export function parseCalendarDateKey(key: string): Date {
   return new Date(`${key}T12:00:00.000Z`);

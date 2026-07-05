@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import { getUserIdFromBearer } from "@/lib/auth-mobile";
 import { prisma } from "@/lib/db";
-import { startOfIsoWeek, toDateKey, parseCalendarDateKey, formatDateNb } from "@/lib/date";
+import { startOfIsoWeek, toDateKey, parseCalendarDateKey, formatDateNb, osloDateKey, osloDayStart } from "@/lib/date";
 import { createInsightContext, getTrainingInsight } from "@/lib/training-load/insight";
 
 const PMC_OPTIONS = [30, 90, 180, 365];
 const DEFAULT_PMC_DAYS = 90;
-
-function utcDayStart(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
 
 function getOsloWeekday(): number {
   const weekday = new Intl.DateTimeFormat("en-US", {
@@ -47,13 +43,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const todayStart = utcDayStart(new Date());
+  const todayStart = osloDayStart();
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
   const dayAfterTomorrow = new Date(tomorrowStart);
   dayAfterTomorrow.setUTCDate(dayAfterTomorrow.getUTCDate() + 1);
 
-  const todayKey = toDateKey(todayStart);
+  const todayKey = osloDateKey();
   const tomorrowKey = toDateKey(tomorrowStart);
 
   const url = new URL(request.url);
