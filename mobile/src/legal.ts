@@ -12,7 +12,7 @@ Hvordan vi bruker data
 
 Lagring og deling
 • Data lagres i sikker database (Neon)
-• Strava-data hentes kun med ditt samtykke via Strava OAuth på nett
+• Strava-data hentes kun med ditt samtykke via Strava OAuth i appen
 • Vi selger ikke personopplysninger til tredjeparter
 
 Dine rettigheter
@@ -31,7 +31,7 @@ Treningsapp er et treningsverktøy for å planlegge økter, analysere belastning
 Du er ansvarlig for å holde passordet ditt hemmelig. Del ikke innloggingsdetaljer med andre.
 
 3. Strava
-Strava-kobling skjer via nettleser. Du godtar Stravas egne vilkår når du kobler til. Vi henter kun aktiviteter du har tilgang til via Strava API.
+Strava-kobling skjer i appen. Du godtar Stravas egne vilkår når du kobler til. Vi henter kun aktiviteter du har tilgang til via Strava API.
 
 4. Akseptabel bruk
 Ikke misbruk tjenesten, forsøk uautorisert tilgang, eller last opp ulovlig innhold.

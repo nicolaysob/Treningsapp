@@ -5,7 +5,7 @@ import { CalendarScreen } from "../screens/CalendarScreen";
 import { CoachScreen } from "../screens/CoachScreen";
 import { LeaderboardScreen } from "../screens/LeaderboardScreen";
 import { FriendsScreen } from "../screens/FriendsScreen";
-import { SettingsScreen } from "../screens/SettingsScreen";
+import { SettingsStack } from "./SettingsStack";
 import { FloatingTabBar } from "./FloatingTabBar";
 import { colors } from "../theme";
 
@@ -44,7 +44,7 @@ export function AppTabs() {
         <Tab.Screen name="Coach" component={CoachScreen} />
         <Tab.Screen name="Duell" component={LeaderboardScreen} />
         <Tab.Screen name="Venner" component={FriendsScreen} />
-        <Tab.Screen name="Mer" component={SettingsScreen} />
+        <Tab.Screen name="Mer" component={SettingsStack} />
       </Tab.Navigator>
     </NavigationContainer>
   );

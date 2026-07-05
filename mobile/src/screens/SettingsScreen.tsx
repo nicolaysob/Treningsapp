@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Constants from "expo-constants";
-import { fetchSettings, triggerSync, type SettingsData } from "../api";
+import { disconnectStrava, fetchSettings, triggerSync, type SettingsData } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { clearToken } from "../auth";
+import { connectStravaInApp } from "../lib/strava";
 import { PRIVACY_TEXT, TERMS_TEXT } from "../legal";
 import { LegalSheet } from "../components/legal/LegalSheet";
 import {
@@ -20,16 +23,19 @@ import {
   Screen,
   SuccessText,
 } from "../components/ui";
+import type { SettingsStackParamList } from "../navigation/SettingsStack";
 import { colors } from "../theme";
 
 const DIVIDER = () => <View style={styles.divider} />;
 
 export function SettingsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const { token, logout } = useAuth();
   const [data, setData] = useState<SettingsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
@@ -49,6 +55,12 @@ export function SettingsScreen() {
     void load().finally(() => setLoading(false));
   }, [load]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!loading) void load();
+    }, [load, loading]),
+  );
+
   async function handleSync() {
     setSyncing(true);
     setMessage(null);
@@ -60,6 +72,42 @@ export function SettingsScreen() {
     } finally {
       setSyncing(false);
     }
+  }
+
+  async function handleConnectStrava() {
+    setConnecting(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await connectStravaInApp(token);
+      setMessage("Strava er koblet til!");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Strava-kobling feilet");
+    } finally {
+      setConnecting(false);
+    }
+  }
+
+  function handleDisconnectStrava() {
+    Alert.alert("Koble fra Strava?", "Du kan koble til igjen når som helst.", [
+      { text: "Avbryt", style: "cancel" },
+      {
+        text: "Koble fra",
+        style: "destructive",
+        onPress: () => {
+          void (async () => {
+            try {
+              await disconnectStrava(token);
+              setMessage("Strava er frakoblet");
+              await load();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Kunne ikke koble fra");
+            }
+          })();
+        },
+      },
+    ]);
   }
 
   async function handleLogout() {
@@ -88,6 +136,7 @@ export function SettingsScreen() {
           name={data?.profile.name ?? null}
           username={data?.profile.username ?? null}
           image={data?.profile.image ?? null}
+          onEdit={() => navigation.navigate("ProfileEdit")}
         />
       </SettingsSection>
 
@@ -95,10 +144,30 @@ export function SettingsScreen() {
         <SettingsLinkRow
           icon="bicycle-outline"
           title="Strava"
-          subtitle={data?.stravaConnected ? "Tilkoblet — administrer på nett" : "Koble til via nettappen"}
+          subtitle={
+            data?.stravaConnected
+              ? "Tilkoblet — trykk for å koble fra"
+              : "Koble til for å hente aktiviteter"
+          }
           right={data?.stravaConnected ? "●" : undefined}
-          onPress={() => void Linking.openURL(`${API_URL}/settings`)}
+          onPress={
+            data?.stravaConnected
+              ? handleDisconnectStrava
+              : () => void handleConnectStrava()
+          }
         />
+        {!data?.stravaConnected ? (
+          <>
+            <DIVIDER />
+            <View style={styles.syncBlock}>
+              <Button
+                label={connecting ? "Åpner Strava…" : "Koble til Strava"}
+                onPress={() => void handleConnectStrava()}
+                loading={connecting}
+              />
+            </View>
+          </>
+        ) : null}
         <DIVIDER />
         <View style={styles.syncBlock}>
           <View style={styles.syncText}>
@@ -119,7 +188,7 @@ export function SettingsScreen() {
           icon="fitness-outline"
           title="Terskler og mål"
           subtitle={trainingLabel}
-          onPress={() => void Linking.openURL(`${API_URL}/settings/training`)}
+          onPress={() => navigation.navigate("TrainingSettings")}
         />
         <DIVIDER />
         <SettingsLinkRow

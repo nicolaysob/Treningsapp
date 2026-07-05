@@ -4,7 +4,7 @@ export function parseOptionalInt(value: FormDataEntryValue | null): number | nul
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function parsePaceToSeconds(value: FormDataEntryValue | null): number | null {
+export function parsePaceToSeconds(value: FormDataEntryValue | string | null): number | null {
   if (!value) return null;
   const match = value.toString().trim().match(/^(\d+):(\d{2})$/);
   if (!match) return null;

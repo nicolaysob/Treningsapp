@@ -1,19 +1,20 @@
 import type { ReactNode } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { UserAvatar } from "../UserAvatar";
-import { API_URL } from "../../config";
 import { colors, radii } from "../../theme";
 
 export function AccountCard({
   name,
   username,
   image,
+  onEdit,
 }: {
   name: string | null;
   username: string | null;
   image: string | null;
+  onEdit?: () => void;
 }) {
   const display = name ?? username ?? "Bruker";
 
@@ -34,11 +35,13 @@ export function AccountCard({
           </View>
         </View>
       </View>
-      <Pressable style={styles.editBtn} onPress={() => void Linking.openURL(`${API_URL}/settings`)}>
-        <Ionicons name="create-outline" size={16} color={colors.accentSoft} />
-        <Text style={styles.editText}>Rediger profil på nett</Text>
-        <Ionicons name="open-outline" size={14} color={colors.textDim} />
-      </Pressable>
+      {onEdit ? (
+        <Pressable style={styles.editBtn} onPress={onEdit}>
+          <Ionicons name="create-outline" size={16} color={colors.accentSoft} />
+          <Text style={styles.editText}>Rediger profil</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.textDim} />
+        </Pressable>
+      ) : null}
     </LinearGradient>
   );
 }

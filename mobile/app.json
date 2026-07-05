@@ -2,6 +2,7 @@
   "expo": {
     "name": "Treningsapp",
     "slug": "treningsapp",
+    "scheme": "treningsapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,7 +26,14 @@
     "plugins": [
       "expo-asset",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Appen trenger tilgang til bilder for profilbilde."
+        }
+      ]
     ]
   }
 }

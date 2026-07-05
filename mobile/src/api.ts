@@ -129,11 +129,15 @@ export type SettingsData = {
   training: {
     weeklyTssGoal: number | null;
     ftpWatts: number | null;
+    thresholdPaceSecPerKm: number | null;
+    hrThresholdBpm: number | null;
+    hrMaxBpm: number | null;
+    raceName: string | null;
+    raceDate: string | null;
     method: string | null;
     isActive: boolean;
     needsHrMaxSetup: boolean;
     tssCoverage: number;
-    raceName: string | null;
   };
 };
 
@@ -222,3 +226,37 @@ export const removeFriendship = (token: string, id: string) =>
 
 export const triggerSync = (token: string) =>
   authMutate<{ ok: boolean; started: boolean }>("/api/mobile/settings/sync", token, "POST");
+
+export const getStravaConnectUrl = (token: string) =>
+  authFetch<{ url: string; redirectUri: string }>("/api/mobile/strava/connect", token);
+
+export const completeStravaConnect = (token: string, code: string) =>
+  authMutate<{ ok: boolean }>("/api/mobile/strava/callback", token, "POST", { code });
+
+export const disconnectStrava = (token: string) =>
+  authMutate<{ ok: boolean }>("/api/mobile/strava", token, "DELETE");
+
+export const updateProfile = (
+  token: string,
+  data: { name: string; username: string; image?: string | null },
+) => authMutate<{ ok: boolean }>("/api/mobile/settings/profile", token, "PATCH", data);
+
+export const updateTrainingGoals = (
+  token: string,
+  data: { weeklyTssGoal?: number | null; raceName?: string | null; raceDate?: string | null },
+) => authMutate<{ ok: boolean }>("/api/mobile/settings/training/goals", token, "PATCH", data);
+
+export const updateTrainingThresholds = (
+  token: string,
+  data: {
+    hrMaxBpm?: number | null;
+    hrThresholdBpm?: number | null;
+    ftpWatts?: number | null;
+    thresholdPaceMinPerKm?: string | null;
+  },
+) => authMutate<{ ok: boolean }>("/api/mobile/settings/training/thresholds", token, "PATCH", data);
+
+export const saveHrMaxQuick = (token: string, hrMaxBpm: number) =>
+  authMutate<{ ok: boolean }>("/api/mobile/settings/training/thresholds", token, "POST", {
+    hrMaxBpm,
+  });
